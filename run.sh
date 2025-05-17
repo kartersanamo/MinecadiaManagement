@@ -1,0 +1,1 @@
+python3 MinecadiaManagement/main.py
