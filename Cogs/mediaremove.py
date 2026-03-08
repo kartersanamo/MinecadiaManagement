@@ -1,18 +1,18 @@
-from Assets.functions import execute
+from Assets.functions import execute, get_embed_logo_url
 from discord.ext import commands
 from discord import app_commands
 from datetime import date
 import discord
 import json
 
-with open("MinecadiaManagement/Assets/config.json", "r") as file:
+with open("Assets/config.json", "r") as file:
     data = json.load(file)
 
 class MediaRemove(commands.Cog):
   def __init__(self, client: commands.Bot):
     self.client = client
   
-    with open("MinecadiaManagement/Assets/config.json", "r") as file:
+    with open("Assets/config.json", "r") as file:
       self.data = json.load(file)
 
   @app_commands.command(name="media-remove", description="Removes a user's Media Rank")
@@ -45,7 +45,8 @@ class MediaRemove(commands.Cog):
                           description=f"**{interaction.user.display_name}** has removed **{user.display_name}**'s Media Rank for the following reason:\n{reason}",
                           color=discord.Color.from_str(data["EMBED_COLOR"])
     )
-    embed.set_footer(text=self.data["FOOTER"], icon_url=data["LOGO"])
+    logo_url = get_embed_logo_url(data["LOGO"])
+    embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
 
     await interaction.edit_original_response(embed=embed, content="Removed their roles! **Reminder** to remove their in-game permissions as well!")
 

@@ -21,7 +21,7 @@ class Logs(commands.Cog):
     self.flush_admin_logs.start()
     #self.flush_db_logs.start()
     
-    with open("MinecadiaManagement/Assets/config.json", "r") as file:
+    with open("Assets/config.json", "r") as file:
         self.data = json.load(file)
 
   @tasks.loop(minutes=1)
@@ -252,6 +252,8 @@ class Logs(commands.Cog):
     
   @commands.Cog.listener()
   async def on_reaction_add(self, reaction, user):
+    if user.bot:
+      return
     embed = discord.Embed(
        title=f"Reaction Added", 
        description= f"`Reaction` {reaction.emoji}\n"
@@ -682,70 +684,97 @@ class Logs(commands.Cog):
     
   @commands.Cog.listener()
   async def on_message_edit(self, message_before, message_after):
-    if message_before.author.bot or \
-            any(substring in message_before.content for substring in ["https", "http"]) or \
-            message_before.channel.id in [915687893811470405, 941111737225199696, 915687894172188722] or \
-            len(message_after.content) > 1000 or len(message_before.content) > 1000:
-      return
 
-    channel = f"`Channel` {message_before.channel.mention}" if hasattr(message_before.channel, 'mention') else "`Channel` DMs"
+      if message_before.author.bot or \
+          any(s in message_before.content for s in ["https", "http"]) or \
+          message_before.channel.id in [915687893811470405, 941111737225199696, 915687894172188722] or \
+          len(message_after.content) > 1000 or len(message_before.content) > 1000:
+          return
 
-    embed = discord.Embed(
+      channel = f"`Channel` {message_before.channel.mention}" if hasattr(message_before.channel, 'mention') else "`Channel` DMs"
+
+      embed = discord.Embed(
           title="Message Edited",
-          description=f"`Message author` {message_before.author.name}#{message_before.author.discriminator} ({message_before.author.id})\n"
-                      f"{channel}",
+          description=f"`Message author` {message_before.author} ({message_before.author.id})\n{channel}",
           color=discord.Color.from_str(self.data["EMBED_COLOR"]),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
-    )
+      )
 
-    embed.add_field(name="Before", value=message_before.content, inline=False)
-    embed.add_field(name="After", value=f"{message_after.content}\n \n[Jump to Message]({message_before.jump_url})", inline=False)
-    embed.set_thumbnail(url=message_before.author.avatar)
+      embed.add_field(name="Before", value=message_before.content, inline=False)
+      embed.add_field(name="After", value=f"{message_after.content}\n\n[Jump to Message]({message_before.jump_url})", inline=False)
+      embed.set_thumbnail(url=message_before.author.avatar)
 
-    self.logs.append(embed)
-    self.db_logs.append((
-            datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-            "Message Edit", 
-            message_before.author.id, 
-            f"{message_before.content} -> {message_after.content}", 
-            f" C|{message_before.channel.id} || J|{message_before.jump_url}"
-    ))
+      # ---- ADMIN ROUTING (author only) ----
+      if self.is_admin(message_before):
+          admin_channel = message_before.guild.get_channel(1190693196716576878)
+          if admin_channel:
+              await admin_channel.send(embed=embed)
+      else:
+          self.logs.append(embed)
 
+      # DB log
+      self.db_logs.append((
+          datetime.datetime.now(datetime.timezone.utc).timestamp(),
+          "Message Edit",
+          message_before.author.id,
+          f"{message_before.content} -> {message_after.content}",
+          f"C|{message_before.channel.id} || J|{message_before.jump_url}"
+      ))
   
   @commands.Cog.listener()
   async def on_message_delete(self, message):
-    if message.author.bot:
-        return
-    
-    async for entry in message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete):
-        entry = entry
-    
-    if entry.target.id == message.author.id:
-        deleter = f"{entry.user.mention} ({entry.user.name})"
-    else:
-        deleter = f"{message.author.mention} ({message.author.name})"
+      if message.author.bot:
+          return
 
-    channel = f"`Channel` {message.channel.mention}" if hasattr(message.channel, 'mention') else "`Channel` DMs"
+      # Fetch audit log entry
+      entry = None
+      try:
+          async for ent in message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete):
+              entry = ent
+      except:
+          pass
 
-    embed = discord.Embed(
+      # Determine deleter
+      if entry and entry.target.id == message.author.id:
+          deleter = entry.user
+      else:
+          deleter = message.author
+
+      channel = f"`Channel` {message.channel.mention}" if hasattr(message.channel, 'mention') else "`Channel` DMs"
+
+      embed = discord.Embed(
           title="Message Deleted",
-          description=f"`Message author` {message.author.name}#{message.author.discriminator} ({message.author.id})\n"
-                      f"{channel}\n"
-                      f"`Message` {message.content}\n"
-                      f"`Deleter` {deleter}",
+          description=(
+              f"`Message author` {message.author} ({message.author.id})\n"
+              f"{channel}\n"
+              f"`Message` {message.content}\n"
+              f"`Deleter` {deleter.mention} ({deleter.name})"
+          ),
           color=discord.Color.from_str(self.data["EMBED_COLOR"]),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
-    )
-    embed.set_thumbnail(url=message.author.avatar)
+      )
+      embed.set_thumbnail(url=message.author.avatar)
 
-    self.logs.append(embed)
-    self.db_logs.append((
-            datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-            "Message Deleted", 
-            message.author.id, 
-            message.content, 
-            f" C|{message.channel.id}"
-    ))
+      # ---- ADMIN ROUTING RULE ----
+      author_is_admin = self.is_admin(message)
+      fake_message_for_deleter = type("FakeMsg", (), {"author": deleter, "guild": message.guild})
+      deleter_is_admin = self.is_admin(fake_message_for_deleter)
+
+      if author_is_admin or deleter_is_admin:
+          admin_channel = message.guild.get_channel(1190693196716576878)
+          if admin_channel:
+              await admin_channel.send(embed=embed)
+      else:
+          self.logs.append(embed)
+
+      # DB
+      self.db_logs.append((
+          datetime.datetime.now(datetime.timezone.utc).timestamp(),
+          "Message Deleted",
+          message.author.id,
+          message.content,
+          f"C|{message.channel.id}"
+      ))
 
   @commands.Cog.listener()
   async def on_invite_create(self, invite):
@@ -938,27 +967,37 @@ class Logs(commands.Cog):
 
     # Check if guild permissions changed
     if before.guild_permissions != after.guild_permissions:
-      differences = await self.find_difference(after, before.guild_permissions, after.guild_permissions)
-      differences = "\n".join(differences)
-      if differences is None:
-         return
-      embed = discord.Embed(
-          title="Permissions Changed",
-          description=f"`Member` {before.mention} | {before.name}#{before.discriminator}",
-          color=discord.Color.from_str(self.data["EMBED_COLOR"]),
-          timestamp=datetime.datetime.now(datetime.timezone.utc)
-      )
-      embed.add_field(name="Changes", value=differences)
-      embed.set_thumbnail(url=before.avatar)
 
-      self.admin_logs.append(embed)
-      self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(),
-          "Permissions Changed",
-          before.id,
-          f"{before.guild_permissions} -> {after.guild_permissions}",
-          f" TR|{before.top_role.name}"
-      ))
+        differences = await self.find_difference(after, before.guild_permissions, after.guild_permissions)
+
+        # If nothing found, exit
+        if not differences:
+            return
+
+        # Normalize to list
+        if isinstance(differences, str):
+            differences = [differences]
+
+        # Now safe to join
+        differences_text = "\n".join(differences)
+
+        embed = discord.Embed(
+            title="Permissions Changed",
+            description=f"`Member` {before.mention} | {before.name}#{before.discriminator}",
+            color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+            timestamp=datetime.datetime.now(datetime.timezone.utc)
+        )
+        embed.add_field(name="Changes", value=differences_text)
+        embed.set_thumbnail(url=before.avatar)
+
+        self.admin_logs.append(embed)
+        self.db_logs.append((
+            datetime.datetime.now(datetime.timezone.utc).timestamp(),
+            "Permissions Changed",
+            before.id,
+            f"{before.guild_permissions} -> {after.guild_permissions}",
+            f" TR|{before.top_role.name}"
+        ))
 
   async def find_difference(self, member, permission_obj1, permission_obj2):
     differences = []

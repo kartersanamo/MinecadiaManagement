@@ -1,15 +1,5 @@
 {
-    "NEW_TOKEN": "REMOVED",
-    "TOKEN": "REMOVED",
-    "DATABASE_CONFIG": {
-        "host": "127.0.0.1",
-        "user": "discord_bot",
-        "database": "discord_bot",
-        "password": "REMOVED",
-        "port": "3306",
-        "autocommit": "True"
-    },
-    "LOGO": "https://i.imgur.com/fjIYhig.png",
+    "LOGO": "Assets/Logo.png",
     "FOOTER": "Minecadia Management Bot",
     "EMBED_COLOR": "0xF1C40F",
     "PRESENCE": "play.minecadia.com",
@@ -23,7 +13,9 @@
         "medianote",
         "medialist",
         "mediadump",
-        "mediaaccept"
+        "mediaaccept",
+        "yt_checker",
+        "analyze"
     ],
     "STAFF_ROLES": [
         "*",
@@ -54,10 +46,13 @@
         "Skyblock Administrator"
     ],
     "GUILD_ID": 680569558754656280,
+    "COMMUNITY_VIDEOS_CHANNEL_ID": 918901950341333033,
+    "APPROVAL_CHANNEL_ID": 935016733033525328,
     "ADMIN_LOGS": 1190693196716576878,
     "RECRUITMENT_CHANNELS": [
         918904091906834452,
         1186037933136949258,
         1186037987369296003
-    ]
+    ],
+    "_comment": "TOKEN and DATABASE_CONFIG are in .env"
 }

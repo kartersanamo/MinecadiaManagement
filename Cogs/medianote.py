@@ -1,17 +1,17 @@
-from Assets.functions import execute
+from Assets.functions import execute, get_embed_logo_url
 from discord.ext import commands
 from discord import app_commands
 import discord
 import json
 
-with open("MinecadiaManagement/Assets/config.json", "r") as file:
+with open("Assets/config.json", "r") as file:
     data = json.load(file)
 
 class MediaNote(commands.Cog):
   def __init__(self, client: commands.Bot):
     self.client = client
   
-    with open("MinecadiaManagement/Assets/config.json", "r") as file:
+    with open("Assets/config.json", "r") as file:
       self.data = json.load(file)
 
   @app_commands.command(name="media-note", description="Adds a note to a Media Rank")
@@ -34,7 +34,8 @@ class MediaNote(commands.Cog):
                           description=note,
                           color=data["EMBED_COLOR"]
     )
-    embed.set_footer(text=self.data["FOOTER"], icon_url=data["LOGO"])
+    logo_url = get_embed_logo_url(data["LOGO"])
+    embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
 
     await interaction.edit_original_response(content=None, embed=embed)
 

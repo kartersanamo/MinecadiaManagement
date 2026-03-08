@@ -1,4 +1,4 @@
-from Assets.functions import execute
+from Assets.functions import execute, get_embed_logo_url
 from discord.ext import commands
 from discord import app_commands
 from typing import Literal
@@ -6,14 +6,14 @@ from datetime import date
 import discord
 import json
 
-with open("MinecadiaManagement/Assets/config.json", "r") as file:
+with open("Assets/config.json", "r") as file:
     data = json.load(file)
 
 class MediaAccept(commands.Cog):
   def __init__(self, client: commands.Bot):
     self.client = client
 
-    with open("MinecadiaManagement/Assets/config.json", "r") as file:
+    with open("Assets/config.json", "r") as file:
       self.data = json.load(file)
 
   @app_commands.command(name="media-accept", description="Accepts a new member as Media Rank")
@@ -51,10 +51,10 @@ class MediaAccept(commands.Cog):
                         f"Again, congratulations!",
           color=discord.Color.from_str(self.data["EMBED_COLOR"]),
       )
-      embed.set_footer(text=self.data["FOOTER"], icon_url=self.data["LOGO"])
-
+      logo_url = get_embed_logo_url(self.data["LOGO"])
+      embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
       await interaction.edit_original_response(content="Successfully accepted this user as media!")
-      await interaction.channel.send(content=user.mention, embed=embed)
+      await interaction.channel.send(content=user.mention, embed=embed, file=discord.File("Assets/Logo.png"))
 
   @mediaaccept.error
   async def mediaaccept_error(self, interaction: discord.Interaction, error):

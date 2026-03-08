@@ -5,14 +5,14 @@ from typing import Literal
 import discord
 import json
 
-with open("MinecadiaManagement/Assets/config.json", "r") as file:
+with open("Assets/config.json", "r") as file:
     data = json.load(file)
 
 class Timeout(commands.Cog):
   def __init__(self, client: commands.Bot):
     self.client = client
   
-    with open("MinecadiaManagement/Assets/config.json", "r") as file:
+    with open("Assets/config.json", "r") as file:
       self.data = json.load(file)
 
   @app_commands.command(name="timeout", description="Times out a user in the discord")

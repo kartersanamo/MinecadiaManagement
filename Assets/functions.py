@@ -1,11 +1,28 @@
 import discord
 import json
 import aiomysql
+from typing import Optional
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def get_data():
-   with open("MinecadiaManagement/Assets/config.json", "r") as file:
-      return json.load(file)
-   
+   with open("Assets/config.json", "r") as file:
+      data = json.load(file)
+   if os.getenv("DISCORD_TOKEN"):
+      data["TOKEN"] = os.getenv("DISCORD_TOKEN")
+   if os.getenv("DB_HOST"):
+      data["DATABASE_CONFIG"] = {
+         "host": os.getenv("DB_HOST", "127.0.0.1"),
+         "port": int(os.getenv("DB_PORT", "3306")),
+         "user": os.getenv("DB_USER", ""),
+         "password": os.getenv("DB_PASSWORD", ""),
+         "database": os.getenv("DB_NAME", "") or os.getenv("DB_DATABASE", ""),
+         "autocommit": os.getenv("DB_AUTOCOMMIT", "true").lower() in ("1", "true", "yes"),
+      }
+   return data
+
 data = get_data()
 
 async def connect():
@@ -44,3 +61,16 @@ async def is_staff(user: discord.Member):
 
 async def is_admin(user: discord.Member):
     return any(role.name in data["ADMIN_ROLES"] for role in user.roles)
+
+def get_embed_logo_url(logo_path: Optional[str]) -> Optional[str]:
+    if not logo_path:
+        return None
+
+    if logo_path.startswith(("http://", "https://")):
+        return logo_path
+
+    if os.path.isfile(logo_path):
+        filename = os.path.basename(logo_path)
+        return f"attachment://{filename}"
+
+    return None

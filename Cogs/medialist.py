@@ -1,18 +1,19 @@
 from Assets.functions import execute
+from Assets.functions import get_embed_logo_url
 from discord.ext import commands
 from discord import app_commands
 from typing import Literal
 import discord
 import json
 
-with open("MinecadiaManagement/Assets/config.json", "r") as file:
+with open("Assets/config.json", "r") as file:
     data = json.load(file)
 
 class MediaList(commands.Cog):
   def __init__(self, client: commands.Bot):
     self.client = client
     
-    with open("MinecadiaManagement/Assets/config.json", "r") as file:
+    with open("Assets/config.json", "r") as file:
       self.data = json.load(file)
 
   @app_commands.command(name="media-list", description="Lists all of the users with Media Rank")
@@ -48,7 +49,8 @@ class MediaList(commands.Cog):
                           description=desc,
                           color=discord.Color.from_str(self.data["EMBED_COLOR"]),
     )
-    embed.set_footer(text=self.data["FOOTER"], icon_url=self.data["LOGO"])
+    logo_url = get_embed_logo_url(self.data["LOGO"])
+    embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
 
     await interaction.edit_original_response(content=None, embed=embed)
   

@@ -7,9 +7,9 @@ import json
 class Mentions(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
-        self.attempts = {}
+        self.mention_timestamps = {}
 
-        with open("MinecadiaManagement/Assets/config.json", "r") as file:
+        with open("Assets/config.json", "r") as file:
             self.data = json.load(file)
     
     @commands.Cog.listener()
@@ -21,36 +21,50 @@ class Mentions(commands.Cog):
             content = message.content
             if "<" in content and ">" in content and "@" in content:
                 sub = content[content.index("<") + 2:content.index(">")]
-                mentioned_member = discord.utils.get(message.guild.members, id=int(sub))
+                try:
+                    mentioned_member = discord.utils.get(message.guild.members, id=int(sub))
+                except:
+                    mentioned_member = None
 
-                if await is_staff(mentioned_member):
-                    self.attempts[message.author.id] = self.attempts.get(message.author.id, 0) + 1
+                if mentioned_member and await is_staff(mentioned_member):
+                    now = datetime.utcnow()
+                    user_id = message.author.id
+                    if user_id not in self.mention_timestamps:
+                        self.mention_timestamps[user_id] = []
 
-                    if self.attempts[message.author.id] == 3:
-                        delta = timedelta(seconds=3600)
-                        logs = discord.utils.get(message.guild.channels, name="logs")
+                    one_hour_ago = now - timedelta(hours = 1)
+                    self.mention_timestamps[user_id] = [
+                        timestamp for timestamp in self.mention_timestamps[user_id] if timestamp > one_hour_ago
+                    ]
+
+                    self.mention_timestamps[user_id].append(now)
+
+                    if len(self.mention_timestamps[user_id]) >= 3:
+                        delta = timedelta(hours=1)
+                        logs = message.guild.get_channel(918928087582916699)
 
                         try:
-                            await message.author.timeout(delta, reason="Auto Timeout for Staff Mentions")
-                            embed = discord.Embed(title="Staff Mentions Timeout", description=f"`Member` {message.author}#{message.author.discriminator} ({message.author.id})", color=discord.Color.from_str(self.data["EMBED_COLOR"]), timestamp=datetime.utcnow())
+                            await message.author.timeout(delta, reason = "Auto Timeout for Excessive Staff Mentions")
+                            embed = discord.Embed(
+                                title="Staff Mentions Timeout",
+                                description=f"`Member` {message.author}#{message.author.discriminator} ({message.author.id})",
+                                color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+                                timestamp=now
+                            )
+                        except Exception as error:
+                            embed = discord.Embed(
+                                title="Staff Mentions Timeout (Error)",
+                                description=f"`Member` {message.author}#{message.author.discriminator} ({message.author.id})\n`Error` {error}",
+                                color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+                                timestamp=now
+                            )
 
-                        except Exception as Error:
-                            embed=discord.Embed(title="Staff Mentions Timeout   ", description=f"`Member` {message.author}#{message.author.discriminator} ({message.author.id})\n`Error` {Error}", color=discord.Color.from_str(self.data["EMBED_COLOR"]), timestamp=datetime.datetime.utcnow())
-    
                         await logs.send(embed=embed)
-
-                        del self.attempts[message.author.id]
-
+                        del self.mention_timestamps[user_id]
                 else:
-                    if message.author.id in self.attempts:
-                        del self.attempts[message.author.id]
-
-            else:
-                if message.author.id in self.attempts:
-                    del self.attempts[message.author.id]
-
-        except:
+                    pass
+        except Exception:
             pass
 
 async def setup(client:commands.Bot) -> None:
-  await client.add_cog(Mentions(client))
+    await client.add_cog(Mentions(client))

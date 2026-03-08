@@ -3,14 +3,14 @@ from discord import app_commands
 import discord
 import json
 
-with open("MinecadiaManagement/Assets/config.json", "r") as file:
+with open("Assets/config.json", "r") as file:
     data = json.load(file)
 
 class Unban(commands.Cog):
   def __init__(self, client: commands.Bot):
     self.client = client
   
-    with open("MinecadiaManagement/Assets/config.json", "r") as file:
+    with open("Assets/config.json", "r") as file:
         self.data = json.load(file)
 
   @app_commands.command(name="unban", description="Unbans a user from the discord")

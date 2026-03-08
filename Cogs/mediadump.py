@@ -6,14 +6,14 @@ import discord
 import os
 import json
 
-with open("MinecadiaManagement/Assets/config.json", "r") as file:
+with open("Assets/config.json", "r") as file:
     data = json.load(file)
 
 class MediaDump(commands.Cog):
   def __init__(self, client: commands.Bot):
     self.client = client
     
-    with open("MinecadiaManagement/Assets/config.json", "r") as file:
+    with open("Assets/config.json", "r") as file:
       self.data = json.load(file)
 
   @app_commands.command(name="media-dump", description="Dumps the Media Information")
