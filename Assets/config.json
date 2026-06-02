@@ -15,7 +15,9 @@
         "mediadump",
         "mediaaccept",
         "yt_checker",
-        "analyze"
+        "analyze",
+        "analytics_tracking",
+        "member_messages"
     ],
     "STAFF_ROLES": [
         "*",

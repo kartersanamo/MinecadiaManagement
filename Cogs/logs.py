@@ -66,18 +66,42 @@ class Logs(commands.Cog):
   #  cursor.executemany(information, self.db_logs)
   #  self.db_logs = []
   #
-  def is_staff(self, message):
+  def _member_roles(self, author, guild: discord.Guild | None):
+    """Resolve role list; message.author is often User, not Member."""
+    if guild is None or author is None:
+      return ()
+    if isinstance(author, discord.Member):
+      return author.roles
+    member = guild.get_member(author.id)
+    if member is not None:
+      return member.roles
+    return ()
+
+  def _has_named_role(self, author, guild: discord.Guild | None, role_names: list[str]) -> bool:
+    if guild is None:
+      return False
+    member_roles = self._member_roles(author, guild)
+    return any(
+      discord.utils.get(guild.roles, name=role_name) in member_roles
+      for role_name in role_names
+    )
+
+  def is_staff(self, message) -> bool:
     names_of_roles = ["*", "Owner", "Factions Management", "Manager", "Developer", "Sr. Administrator", 
                       "Factions Administrator", "Kitmap Administrator", "Lifesteal Administrator", "Skyblock Administrator", "Staff of the Month", "Staff Team",
                       "Factions Jr. Administrator", "Kitmap Jr. Administrator", "Lifesteal Jr. Administrator", "Skyblock Jr. Administrator",
                       "Factions Sr. Moderator", "Kitmap Sr. Moderator", "Lifesteal Sr. Moderator", "Skyblock Sr. Moderator", 
                       "Factions Moderator", "Kitmap Moderator", "Lifesteal Moderator", "Skyblock Moderator", 
                       "Factions Helper", "Kitmap Helper", "Skyblock Helper", "Skyblock Helper"]
-    return any(discord.utils.get(message.guild.roles, name=role_name) in message.author.roles for role_name in names_of_roles)
+    guild = getattr(message, "guild", None)
+    author = getattr(message, "author", None)
+    return self._has_named_role(author, guild, names_of_roles)
   
-  def is_admin(self, message):
+  def is_admin(self, message) -> bool:
     names_of_roles = ["*", "Owner", "Factions Management", "Manager", "Developer", "Sr. Administrator", "Factions Administrator", "Kitmap Administrator", "Lifesteal Administrator", "Skyblock Administrator"]
-    return any(discord.utils.get(message.guild.roles, name=role_name) in message.author.roles for role_name in names_of_roles)
+    guild = getattr(message, "guild", None)
+    author = getattr(message, "author", None)
+    return self._has_named_role(author, guild, names_of_roles)
     
   @commands.Cog.listener()
   async def on_message(self, message):

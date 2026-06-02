@@ -4,6 +4,16 @@ from datetime import timedelta
 from typing import Literal
 import discord
 import json
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parents[2]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+try:
+    from _analytics import logger as analytics
+except ImportError:
+    analytics = None
 
 with open("Assets/config.json", "r") as file:
     data = json.load(file)
@@ -38,6 +48,14 @@ class Timeout(commands.Cog):
       return await interaction.edit_original_response(content=f"Failed! **{user}** is already timed out; which ends <t:{int(user.timed_out_until.timestamp())}:R>")
         
     await user.timeout(delta, reason=reason)
+    if analytics:
+        analytics.record_mod_action(
+            "timeout",
+            str(interaction.user.id),
+            str(user.id),
+            reason=reason,
+            duration_seconds=seconds,
+        )
     await interaction.edit_original_response(content=f"Successfully timed out **{user.mention}** for **{duration.title()}** for reason **{reason}**.")
   
   @timeout.error
