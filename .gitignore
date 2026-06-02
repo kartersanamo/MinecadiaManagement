@@ -6,3 +6,4 @@ __pycache__/
 venv/
 ENV/
 Cogs/__pycache__
+*.log
