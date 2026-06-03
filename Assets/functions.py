@@ -1,11 +1,18 @@
+import functools
+import logger
 import discord
 import json
 import aiomysql
 from typing import Optional
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
+
+log_tasks = logger.logging.getLogger("Tasks")
+log_commands = logger.logging.getLogger("Commands")
+
 
 def get_data():
    with open("Assets/config.json", "r") as file:
@@ -24,6 +31,31 @@ def get_data():
    return data
 
 data = get_data()
+
+
+def task(action_name: str, log: bool = None):
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            start_time = time.perf_counter()
+            try:
+                result = await func(*args, **kwargs)
+                time_elapsed = round((time.perf_counter() - start_time), 2)
+                if time_elapsed > 3:
+                    log_tasks.warning(
+                        f"{action_name} took a long time to complete and finished in {time_elapsed}s"
+                    )
+                elif log:
+                    log_tasks.info(f"{action_name} completed in {time_elapsed}s")
+                return result
+            except Exception as error:
+                log_tasks.error(
+                    f"{action_name} failed after {round((time.perf_counter() - start_time), 2)}s : {error}"
+                )
+                raise error
+        return wrapper
+    return decorator
+
 
 async def connect():
     return await aiomysql.connect(
@@ -45,7 +77,7 @@ async def execute(query):
             await cursor.execute(query)
             rows = await cursor.fetchall()
     except Exception as error:
-        print(f"Execute error: '{error}'")
+        log_tasks.error(f"Error executing query: {query} {error}")
     finally:
         if connection:
             connection.close()

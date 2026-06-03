@@ -4,7 +4,7 @@ from typing import Literal
 import discord
 import json
 import io
-from Assets.functions import execute
+from Assets.functions import execute, log_commands
 
 with open("Assets/config.json", "r") as file:
     data = json.load(file)
@@ -174,7 +174,7 @@ class Analyze(commands.Cog):
                 
         except Exception as e:
             await interaction.followup.send(f"Error executing query: {str(e)}")
-            print(f"Error in analyze command: {e}")
+            log_commands.error(f"/analyze error {e}")
     
     def format_results(self, query_name: str, results: list) -> str:
         """Format results based on query type"""
