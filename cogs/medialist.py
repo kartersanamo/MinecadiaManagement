@@ -4,7 +4,6 @@ from typing import Literal
 import discord
 import json
 from core.database import execute
-from utils.embeds import get_embed_logo_url
 
 with open("assets/config.json", "r") as file:
     data = json.load(file)
@@ -49,7 +48,7 @@ class MediaList(commands.Cog):
                           description=desc,
                           color=discord.Color.from_str(self.data["EMBED_COLOR"]),
     )
-    logo_url = get_embed_logo_url(self.data["LOGO"])
+    logo_url = self.client.app.embeds.get_logo_url(self.data["LOGO"])
     embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
 
     await interaction.edit_original_response(content=None, embed=embed)

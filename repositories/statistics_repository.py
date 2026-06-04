@@ -1,4 +1,3 @@
-import discord
 
 from core.database import DatabasePool
 

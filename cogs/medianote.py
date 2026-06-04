@@ -3,7 +3,6 @@ from discord import app_commands
 import discord
 import json
 from core.database import execute
-from utils.embeds import get_embed_logo_url
 
 with open("assets/config.json", "r") as file:
     data = json.load(file)
@@ -35,7 +34,7 @@ class MediaNote(commands.Cog):
                           description=note,
                           color=data["EMBED_COLOR"]
     )
-    logo_url = get_embed_logo_url(data["LOGO"])
+    logo_url = self.client.app.embeds.get_logo_url(data["LOGO"])
     embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
 
     await interaction.edit_original_response(content=None, embed=embed)

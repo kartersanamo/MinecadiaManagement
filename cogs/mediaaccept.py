@@ -5,7 +5,6 @@ from datetime import date
 import discord
 import json
 from core.database import execute
-from utils.embeds import get_embed_logo_url
 
 with open("assets/config.json", "r") as file:
     data = json.load(file)
@@ -52,7 +51,7 @@ class MediaAccept(commands.Cog):
                         f"Again, congratulations!",
           color=discord.Color.from_str(self.data["EMBED_COLOR"]),
       )
-      logo_url = get_embed_logo_url(self.data["LOGO"])
+      logo_url = self.client.app.embeds.get_logo_url(self.data["LOGO"])
       embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
       await interaction.edit_original_response(content="Successfully accepted this user as media!")
       await interaction.channel.send(content=user.mention, embed=embed, file=discord.File("assets/Logo.png"))

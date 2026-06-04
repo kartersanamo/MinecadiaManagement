@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from core.app import BotApp
 from core.config import get_data
 from core.decorators import task
-from core.loggers import log_commands, log_tasks
+from core.loggers import log_tasks
 
 load_dotenv()
 
