@@ -4,30 +4,35 @@ from pathlib import Path
 os.chdir(Path(__file__).resolve().parent)
 
 import warnings
-warnings.filterwarnings("ignore", category=FutureWarning, module="google")
-
-import logger  # noqa: F401 — configures logging before other imports
+warnings.filterwarnings("ignore", category = FutureWarning, module = "google")
 
 from Assets.functions import get_data, task, log_tasks, log_commands
+
+
+from discord import app_commands
 from discord.ext import commands
-from typing import Literal
 import discord
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
+COG_FILES = [file.split(".")[0].title() for file in os.listdir("Cogs/") if file.endswith(".py")]
+
+
 class Client(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix=".", intents=discord.Intents().all())
+        super().__init__(command_prefix = ".", intents = discord.Intents().all())
         self.data: dict = get_data()
-        self.cogslist: list[str] = self.data["COGS_LIST"]
 
     @task("Setup Cogs")
     async def setup_cogs(self):
-        for ext in self.cogslist:
+        for ext in COG_FILES:
             log_tasks.info(f"Loaded cog {ext}.py")
-            await self.load_extension("Cogs." + ext)
+            await self.load_extension("Cogs." + ext.lower())
+        
+    @task("Register Analytics")
+    async def register_analytics(self):
         import sys
 
         _minecadia = Path(__file__).resolve().parent.parent
@@ -36,80 +41,63 @@ class Client(commands.Bot):
         from _analytics.register import register_command_tracking
 
         await register_command_tracking(self)
+    
+    @task("Update Presence")
+    async def update_presence(self):
+        presence = self.data["PRESENCE"]
+        await client.change_presence(activity = discord.Game(name = presence))
+        log_tasks.info(f"Updated the bot's presence to {presence}")
+
+    @task("Remove Help")
+    async def remove_help(self):
+        client.remove_command("help")
 
     @task("Sync Command Tree")
     async def sync_command_tree(self):
-        guild = discord.Object(id=self.data["GUILD_ID"])
-        self.tree.clear_commands(guild=guild)
-        self.tree.copy_global_to(guild=guild)
-        synced = await self.tree.sync(guild=guild)
-        log_tasks.info(
-            f"Synced {len(synced)} commands to guild {self.data['GUILD_ID']}: "
-            f"{[command.name for command in synced]}"
-        )
+        commands: list[discord.app_commands.AppCommand] = await self.tree.sync()
+        command_list: str = ', '.join([command.name for command in commands])
+        log_tasks.info(f"Synced {len(commands)} commands {command_list}")
 
     @task("Setup Hook")
     async def setup_hook(self):
         await self.setup_cogs()
-        await self.sync_command_tree()
+        await self.register_analytics()
 
     @task("Logging in")
     async def on_ready(self):
-        await self.change_presence(activity=discord.Game(name=self.data["PRESENCE"]))
-        self.remove_command("help")
+        await self.update_presence()
+        await self.remove_help()
+        await self.sync_command_tree()
         log_tasks.info(f"Logged in as {client.user} ({client.user.id})")
-
-    async def on_command_error(self, ctx, error):
-        log_commands.error(f"Command error: {error}")
 
 
 client = Client()
 
 
-@client.tree.command(name="management-reload", description="Reloads a Cog Class")
-async def reload(
-    interaction: discord.Interaction,
-    cog: Literal[
-        "Unban",
-        "Timeout",
-        "Mentions",
-        "Logs",
-        "Ban",
-        "MediaRemove",
-        "MediaNote",
-        "MediaList",
-        "MediaDump",
-        "MediaAccept",
-        "Analyze",
-    ],
-):
-    if interaction.user.id == 837793755838939157:
-        await client.reload_extension(f"Cogs.{cog.lower()}")
-        log_commands.info(
-            f"Reloaded cog {cog}.py by {interaction.user} ({interaction.user.id})"
-        )
-        await interaction.response.send_message(
-            f"Successfully reloaded **{cog}.py**", ephemeral=True
-        )
-    else:
-        await interaction.response.send_message("You cannot do this!", ephemeral=True)
+@task("Management Reload Command", True)
+async def management_reload_command(interaction: discord.Interaction, cog: str):
+    if interaction.guild is None:
+        return await interaction.response.send_message(content = "Commands cannot be ran in DMs!", ephemeral = True)
+    if cog not in COG_FILES:
+        await interaction.response.send_message(f"Invalid cog name **{cog}.py**", ephemeral = True)
+        return
+    await client.reload_extension(f"Cogs.{cog.lower()}")
+    await interaction.response.send_message(f"Successfully reloaded **{cog}.py**", ephemeral = True)
 
+async def cog_autocomplete(_: discord.Interaction, current: str):
+    return [
+        app_commands.Choice(name = cog, value = cog)
+        for cog in COG_FILES if current.lower() in cog.lower()
+    ]
 
-@reload.error
-async def reload_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
-    log_commands.error(f"/{interaction.command.name} error {error}")
-    if interaction.response.is_done():
-        await interaction.followup.send(content=str(error), ephemeral=True)
-    else:
-        await interaction.response.send_message(content=str(error), ephemeral=True)
+@client.tree.command(name = "management-reload", description = "Reloads a Cog Class")
+@app_commands.autocomplete(cog = cog_autocomplete)
+async def managementreload(interaction: discord.Interaction, cog: str):
+    await management_reload_command(interaction, cog)
 
-
-@client.tree.context_menu(name="Create Giveaway for 1d")
-async def create_giveaway_1d(interaction: discord.Interaction, message: discord.Message):
-    await interaction.response.send_message(
-        content="Created a giveaway for 1d " + message.content
-    )
-
+@managementreload.error
+async def managementreload_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
+    await interaction.followup.send(content = error, ephemeral = True) if interaction.response.is_done() else await interaction.response.send_message(content = error, ephemeral = True)
 
 TOKEN = os.getenv("DISCORD_TOKEN") or client.data.get("TOKEN")
 if not TOKEN:

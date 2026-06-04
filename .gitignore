@@ -1,10 +1,5 @@
 .env
-__pycache__/
-*.py[cod]
-*$py.class
-.venv
-venv/
-ENV/
-Cogs/__pycache__
 *.log
-Logs/*
+*.py[cod]
+.venv/
+Logs/
