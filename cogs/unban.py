@@ -38,9 +38,5 @@ class Unban(commands.Cog):
 
     await interaction.edit_original_response(content=f"Failed! **{user}** is not banned.")
 
-  @unban.error
-  async def unban_error(self, interaction: discord.Interaction, error):
-    await interaction.edit_original_response(content=error)
-    
 async def setup(client:commands.Bot) -> None:
   await client.add_cog(Unban(client))

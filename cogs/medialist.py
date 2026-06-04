@@ -53,9 +53,6 @@ class MediaList(commands.Cog):
 
     await interaction.edit_original_response(content=None, embed=embed)
   
-  @medialist.error
-  async def medialist_error(self, interaction: discord.Interaction, error):
-    await interaction.response.send_message(content=error, ephemeral=True)
 
 async def setup(client:commands.Bot) -> None:
   await client.add_cog(MediaList(client))

@@ -31,9 +31,5 @@ class Ban(commands.Cog):
             await pool.wait_closed()
     await interaction.edit_original_response(content=f"Successfully banned {user} for until <t:{can_appeal}:R>")
 
-  @ban.error
-  async def ban_error(self, interaction: discord.Interaction, error):
-    await interaction.edit_original_response(content=error)
-    
 async def setup(client:commands.Bot) -> None:
   await client.add_cog(Ban(client))

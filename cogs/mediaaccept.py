@@ -56,9 +56,6 @@ class MediaAccept(commands.Cog):
       await interaction.edit_original_response(content="Successfully accepted this user as media!")
       await interaction.channel.send(content=user.mention, embed=embed, file=discord.File("assets/Logo.png"))
 
-  @mediaaccept.error
-  async def mediaaccept_error(self, interaction: discord.Interaction, error):
-    await interaction.response.send_message(content=error, ephemeral=True)
 
 async def setup(client:commands.Bot) -> None:
   await client.add_cog(MediaAccept(client))

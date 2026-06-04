@@ -36,10 +36,6 @@ class SendManagement(commands.Cog):
             await interaction.channel.send(embed=embed_obj, view=embed['view'])
         await interaction.edit_original_response(content="Successfully sent your message!")
 
-    @send_management.error
-    async def send_management_error(self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
-        log_commands.error(f"/{interaction.command.name} error {error}")
-        await interaction.followup.send(content=error, ephemeral=True) if interaction.response.is_done() else await interaction.response.send_message(content=error, ephemeral=True)
 
 
 async def setup(client:commands.Bot) -> None:

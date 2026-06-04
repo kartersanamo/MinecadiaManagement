@@ -144,7 +144,7 @@ class Logs(commands.Cog):
           if embed.thumbnail:
             extra+=f" ETN|{embed.thumbnail.url}||"
 
-    except:
+    except Exception:
       pass
 
     self.db_logs.append((
@@ -755,7 +755,7 @@ class Logs(commands.Cog):
       try:
           async for ent in message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete):
               entry = ent
-      except:
+      except Exception:
           pass
 
       # Determine deleter
@@ -1023,6 +1023,35 @@ class Logs(commands.Cog):
             f" TR|{before.top_role.name}"
         ))
 
+  def _timeout_expires_line(self, member: discord.Member, entry: discord.AuditLogEntry | None) -> str:
+    until = member.timed_out_until
+    if until is None and entry:
+      for change in entry.changes:
+        if change.attribute == "communication_disabled_until" and change.after:
+          until = change.after
+          break
+    if until is None:
+      return "`Expires` Unknown"
+    if until.tzinfo is None:
+      until = until.replace(tzinfo=datetime.timezone.utc)
+    return f"`Expires` <t:{int(until.timestamp())}:R>"
+
+  def _timeout_staff_line(self, entry: discord.AuditLogEntry | None) -> str:
+    if entry and entry.user:
+      return f"`Staff` {entry.user.mention} ({entry.user.name})"
+    return "`Staff` Unknown"
+
+  async def _latest_member_update_entry(
+    self, member: discord.Member
+  ) -> discord.AuditLogEntry | None:
+    async for log_entry in member.guild.audit_logs(
+      limit=5, action=discord.AuditLogAction.member_update
+    ):
+      target_id = getattr(log_entry.target, "id", None)
+      if target_id == member.id:
+        return log_entry
+    return None
+
   async def find_difference(self, member, permission_obj1, permission_obj2):
     differences = []
     for attr_name in dir(permission_obj1):
@@ -1031,12 +1060,20 @@ class Logs(commands.Cog):
             value2 = getattr(permission_obj2, attr_name)
             if value1 != value2:
                 if attr_name.title() == "Value":
-                    async for entry in member.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update):
-                        entry = entry
+                    entry = await self._latest_member_update_entry(member)
                     if value1 == 703687441843200 or value1 == 703687441843201:
-                        return ['`Timeout`: True → False', f'`Staff` {entry.user.mention} ({entry.user.name})']
+                        return [
+                          "`Timeout`: True → False",
+                          self._timeout_staff_line(entry),
+                        ]
                     elif value2 == 703687441843200 or value2 == 703687441843201:
-                        return ['`Timeout`: False → True', f'`Staff` {entry.user.mention} ({entry.user.name})', f'`Expires` <t:{int(float(member.timed_out_until.timestamp()))}:R>', f'`Reason` {entry.reason}']
+                        reason = entry.reason if entry and entry.reason else "None provided"
+                        return [
+                          "`Timeout`: False → True",
+                          self._timeout_staff_line(entry),
+                          self._timeout_expires_line(member, entry),
+                          f"`Reason` {reason}",
+                        ]
                     else:
                        return None
                 differences.append(f"`{attr_name.title()}`: {value1} → {value2}")
@@ -1309,7 +1346,7 @@ class Logs(commands.Cog):
       try:
         description += f"[Jump to Message]({interaction.message.jump_url})"
 
-      except:
+      except Exception:
         pass
 
       embed = discord.Embed(

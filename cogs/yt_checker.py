@@ -70,10 +70,10 @@ class YTChecker(commands.Cog):
                                         description = f"[{response3['items'][0]['snippet']['title']}](https://youtube.com/watch?v={recentVideoID})")
                     try:
                         video_embed.set_image(url = response3['items'][0]['snippet']['thumbnails']['maxres']['url'])
-                    except:
+                    except Exception:
                         try:
                             video_embed.set_image(url = response3['items'][0]['snippet']['thumbnails']['sddefault']['url'])
-                        except:
+                        except Exception:
                             pass
                     
                     await approval_channel.send(

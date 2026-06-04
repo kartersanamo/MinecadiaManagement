@@ -36,7 +36,16 @@ class DatabasePool:
                 await cursor.execute(query)
                 rows = await cursor.fetchall()
         except Exception as error:
-            log_tasks.error(f"Error executing query: {query} {error}")
+            try:
+                import sys
+                from pathlib import Path as _Path
+                root = _Path(__file__).resolve().parent.parent.parent
+                if str(root) not in sys.path:
+                    sys.path.insert(0, str(root))
+                from _errors.db import log_query_failure
+                log_query_failure(log_tasks, error, query)
+            except ImportError:
+                log_tasks.error(f"Error executing query: {query} {error}", exc_info=True)
         finally:
             if connection:
                 connection.close()

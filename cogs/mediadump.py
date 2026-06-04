@@ -35,9 +35,5 @@ class MediaDump(commands.Cog):
     await interaction.edit_original_response(content=None, attachments=[discord.File(temp_file)])
     os.remove(temp_file)
 
-  @mediadump.error
-  async def mediadump_error(self, interaction: discord.Interaction, error):
-    await interaction.response.send_message(content=error, ephemeral=True)
-    
 async def setup(client:commands.Bot) -> None:
   await client.add_cog(MediaDump(client))

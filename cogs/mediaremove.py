@@ -50,9 +50,6 @@ class MediaRemove(commands.Cog):
 
     await interaction.edit_original_response(embed=embed, content="Removed their roles! **Reminder** to remove their in-game permissions as well!")
 
-  @mediaremove.error
-  async def mediaremove_error(self, interaction: discord.Interaction, error):
-    await interaction.response.send_message(content=error, ephemeral=True)
 
 async def setup(client:commands.Bot) -> None:
   await client.add_cog(MediaRemove(client))

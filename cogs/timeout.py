@@ -58,9 +58,5 @@ class Timeout(commands.Cog):
         )
     await interaction.edit_original_response(content=f"Successfully timed out **{user.mention}** for **{duration.title()}** for reason **{reason}**.")
   
-  @timeout.error
-  async def timeout_error(self, interaction: discord.Interaction, error):
-    await interaction.edit_original_response(content=error)
-    
 async def setup(client:commands.Bot) -> None:
   await client.add_cog(Timeout(client))

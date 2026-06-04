@@ -39,9 +39,6 @@ class MediaNote(commands.Cog):
 
     await interaction.edit_original_response(content=None, embed=embed)
 
-  @medianote.error
-  async def medianote_error(self, interaction: discord.Interaction, error):
-    await interaction.response.send_message(content=error, ephemeral=True)
 
 async def setup(client:commands.Bot) -> None:
   await client.add_cog(MediaNote(client))

@@ -23,7 +23,7 @@ class Mentions(commands.Cog):
                 sub = content[content.index("<") + 2:content.index(">")]
                 try:
                     mentioned_member = discord.utils.get(message.guild.members, id=int(sub))
-                except:
+                except Exception:
                     mentioned_member = None
 
                 if mentioned_member and await is_staff(mentioned_member):
