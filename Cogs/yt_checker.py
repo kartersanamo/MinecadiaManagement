@@ -1,4 +1,3 @@
-from Assets.functions import get_data
 from discord.ext import commands, tasks
 from discord import app_commands
 from typing import Literal
@@ -6,6 +5,7 @@ import discord
 import json
 
 from googleapiclient.discovery import build
+from core.config import get_data
 api_key = 'REMOVED'
 youtube = build('youtube', 'v3', developerKey=api_key)
 

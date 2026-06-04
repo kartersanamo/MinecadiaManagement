@@ -1,8 +1,9 @@
-from Assets.functions import execute, get_embed_logo_url
 from discord.ext import commands
 from discord import app_commands
 import discord
 import json
+from core.database import execute
+from utils.embeds import get_embed_logo_url
 
 with open("Assets/config.json", "r") as file:
     data = json.load(file)

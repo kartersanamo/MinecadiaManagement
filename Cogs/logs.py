@@ -1,9 +1,9 @@
-from Assets.functions import execute
 from discord.ext import commands, tasks
 from collections import Counter
 import datetime
 import discord
 import json
+from core.database import execute
 
 """
 List of all event listeners which are not utilized in this file:

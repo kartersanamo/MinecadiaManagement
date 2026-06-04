@@ -1,10 +1,10 @@
-from Assets.functions import execute
 from discord.ext import commands
 from discord import app_commands
 import pandas as pd
 import discord
 import os
 import json
+from core.database import execute
 
 with open("Assets/config.json", "r") as file:
     data = json.load(file)

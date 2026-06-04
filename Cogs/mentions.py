@@ -1,8 +1,8 @@
-from Assets.functions import is_admin, is_staff 
 from discord.ext import commands
 from datetime import timedelta, datetime
 import discord
 import json
+from domain.permissions import is_admin, is_staff
 
 class Mentions(commands.Cog):
     def __init__(self, client: commands.Bot):

@@ -13,7 +13,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from _analytics import logger as analytics  # noqa: E402
-from Assets.functions import get_data  # noqa: E402
+from core.config import get_data
 
 
 class AnalyticsTracking(commands.Cog):
@@ -22,13 +22,19 @@ class AnalyticsTracking(commands.Cog):
         self.data = get_data()
         self.guild_id = int(self.data.get("GUILD_ID", 0))
         self._voice_started: dict[tuple[int, int], float] = {}
+        self._ready_initialized = False
 
     async def cog_load(self) -> None:
         if not self.snapshot_loop.is_running():
             self.snapshot_loop.start()
         if not self.voice_flush_loop.is_running():
             self.voice_flush_loop.start()
-        await self.client.wait_until_ready()
+
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        if self._ready_initialized:
+            return
+        self._ready_initialized = True
         await self._seed_voice_sessions()
         await self._record_guild_snapshot()
 

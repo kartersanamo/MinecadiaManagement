@@ -4,7 +4,8 @@ from typing import Literal
 import discord
 import json
 import io
-from Assets.functions import execute, log_commands
+from core.database import execute
+from core.loggers import log_commands
 
 with open("Assets/config.json", "r") as file:
     data = json.load(file)

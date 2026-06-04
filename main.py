@@ -6,13 +6,15 @@ os.chdir(Path(__file__).resolve().parent)
 import warnings
 warnings.filterwarnings("ignore", category = FutureWarning, module = "google")
 
-from Assets.functions import get_data, task, log_tasks, log_commands
 
 
 from discord import app_commands
 from discord.ext import commands
 import discord
 from dotenv import load_dotenv
+from core.config import get_data
+from core.decorators import task
+from core.loggers import log_commands, log_tasks
 
 load_dotenv()
 
@@ -28,9 +30,9 @@ class Client(commands.Bot):
     @task("Setup Cogs")
     async def setup_cogs(self):
         for ext in COG_FILES:
-            log_tasks.info(f"Loaded cog {ext}.py")
             await self.load_extension("Cogs." + ext.lower())
-        
+            log_tasks.info(f"Loaded cog {ext}.py")
+
     @task("Register Analytics")
     async def register_analytics(self):
         import sys

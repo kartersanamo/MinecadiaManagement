@@ -1,9 +1,9 @@
-from Assets.functions import get_data, log_commands, log_tasks
-from Cogs.sync import SyncButtons
 from discord.ext import commands
 from discord import app_commands
 from typing import Literal
 import discord
+from core.config import get_data
+from core.loggers import log_commands
 
 
 class SendManagement(commands.Cog):
