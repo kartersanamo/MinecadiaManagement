@@ -25,10 +25,14 @@ class YTChecker(commands.Cog):
             self.youtube = None
         else:
             self.youtube = build("youtube", "v3", developerKey=api_key)
-    
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.videochecker.start()
+
+    async def cog_load(self) -> None:
+        if not self.videochecker.is_running():
+            self.videochecker.start()
+
+    async def cog_unload(self) -> None:
+        if self.videochecker.is_running():
+            self.videochecker.cancel()
 
     @tasks.loop(minutes=10)
     async def videochecker(self):
@@ -89,14 +93,19 @@ class YTChecker(commands.Cog):
                 f.truncate()
         except Exception as e:
             log_tasks.error(f"videochecker failed: {e}")
-        
+
+    @videochecker.before_loop
+    async def before_videochecker(self) -> None:
+        await self.client.wait_until_ready()
+
     @app_commands.command(name = "task", description = "Edit the YT Checker Task")
     async def task(self, interaction: discord.Interaction, option: Literal['Restart', 'Start', 'Stop'] = 'Restart'):
         if option == 'Restart':
             self.videochecker.restart()
             await interaction.response.send_message("`✅` Success! The YT Checker Task has been restarted.")
         elif option == 'Start':
-            self.videochecker.start()
+            if not self.videochecker.is_running():
+                self.videochecker.start()
             await interaction.response.send_message("`✅` Success! The YT Checker Task has been started.")
         elif option == 'Stop':
             self.videochecker.cancel()

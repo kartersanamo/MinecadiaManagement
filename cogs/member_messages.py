@@ -1,11 +1,14 @@
 """Roll up guild message activity by day (all members)."""
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 
 from discord.ext import commands
 import discord
+
+_log = logging.getLogger("analytics.member_messages")
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
@@ -26,10 +29,13 @@ class MemberMessages(commands.Cog):
             return
         if message.author.bot or not message.guild:
             return
-        analytics.record_member_message(
-            str(message.author.id),
-            len(message.content or ""),
-        )
+        try:
+            analytics.record_member_message(
+                str(message.author.id),
+                len(message.content or ""),
+            )
+        except Exception as exc:
+            _log.debug("record_member_message failed: %s", exc)
 
 
 async def setup(client: commands.Bot) -> None:
