@@ -7,14 +7,14 @@ import json
 from core.database import execute
 from utils.embeds import get_embed_logo_url
 
-with open("Assets/config.json", "r") as file:
+with open("assets/config.json", "r") as file:
     data = json.load(file)
 
 class MediaAccept(commands.Cog):
   def __init__(self, client: commands.Bot):
     self.client = client
 
-    with open("Assets/config.json", "r") as file:
+    with open("assets/config.json", "r") as file:
       self.data = json.load(file)
 
   @app_commands.command(name="media-accept", description="Accepts a new member as Media Rank")
@@ -55,7 +55,7 @@ class MediaAccept(commands.Cog):
       logo_url = get_embed_logo_url(self.data["LOGO"])
       embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
       await interaction.edit_original_response(content="Successfully accepted this user as media!")
-      await interaction.channel.send(content=user.mention, embed=embed, file=discord.File("Assets/Logo.png"))
+      await interaction.channel.send(content=user.mention, embed=embed, file=discord.File("assets/Logo.png"))
 
   @mediaaccept.error
   async def mediaaccept_error(self, interaction: discord.Interaction, error):

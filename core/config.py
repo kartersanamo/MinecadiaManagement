@@ -1,23 +1,35 @@
 import json
 import os
+from typing import Optional
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-_settings: dict | None = None
 
+class ConfigLoader:
+    _instance: Optional["ConfigLoader"] = None
 
-def get_settings() -> dict:
-    global _settings
-    if _settings is not None:
-        return _settings
-    with open("Assets/config.json", "r") as file:
-        data = json.load(file)
-    if os.getenv("DISCORD_TOKEN"):
-        data["TOKEN"] = os.getenv("DISCORD_TOKEN")
-    if os.getenv("DB_HOST"):
-        data["DATABASE_CONFIG"] = {
+    @classmethod
+    def get(cls) -> dict:
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance.settings
+
+    def __init__(self):
+        with open("assets/config.json", "r") as file:
+            data = json.load(file)
+        if os.getenv("DISCORD_TOKEN"):
+            data["TOKEN"] = os.getenv("DISCORD_TOKEN")
+        if os.getenv("DB_HOST"):
+            data["DATABASE_CONFIG"] = self._db_config_from_env()
+        if os.getenv("YOUTUBE_API_KEY"):
+            data["YOUTUBE_API_KEY"] = os.getenv("YOUTUBE_API_KEY")
+        self.settings = data
+
+    @staticmethod
+    def _db_config_from_env() -> dict:
+        return {
             "host": os.getenv("DB_HOST", "127.0.0.1"),
             "port": int(os.getenv("DB_PORT", "3306")),
             "user": os.getenv("DB_USER", ""),
@@ -25,9 +37,20 @@ def get_settings() -> dict:
             "database": os.getenv("DB_NAME", "") or os.getenv("DB_DATABASE", ""),
             "autocommit": os.getenv("DB_AUTOCOMMIT", "true").lower() in ("1", "true", "yes"),
         }
-    _settings = data
-    return _settings
+
+    def get_db_config(self) -> dict:
+        if os.getenv("DB_HOST"):
+            return self._db_config_from_env()
+        return self.settings.get("DATABASE_CONFIG") or {}
+
+
+def get_settings() -> dict:
+    return ConfigLoader.get()
 
 
 def get_data() -> dict:
     return get_settings()
+
+
+def get_db_config() -> dict:
+    return ConfigLoader().get_db_config()

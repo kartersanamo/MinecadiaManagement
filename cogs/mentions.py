@@ -9,7 +9,7 @@ class Mentions(commands.Cog):
         self.client = client
         self.mention_timestamps = {}
 
-        with open("Assets/config.json", "r") as file:
+        with open("assets/config.json", "r") as file:
             self.data = json.load(file)
     
     @commands.Cog.listener()

@@ -7,7 +7,7 @@ import io
 from core.database import execute
 from core.loggers import log_commands
 
-with open("Assets/config.json", "r") as file:
+with open("assets/config.json", "r") as file:
     data = json.load(file)
 
 class Analyze(commands.Cog):

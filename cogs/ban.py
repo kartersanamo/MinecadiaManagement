@@ -5,7 +5,7 @@ from typing import Literal
 import discord
 import json
 
-with open("Assets/config.json", "r") as file:
+with open("assets/config.json", "r") as file:
     data = json.load(file)
 
 class Ban(commands.Cog):

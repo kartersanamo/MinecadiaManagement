@@ -12,6 +12,7 @@ from discord import app_commands
 from discord.ext import commands
 import discord
 from dotenv import load_dotenv
+from core.app import BotApp
 from core.config import get_data
 from core.decorators import task
 from core.loggers import log_commands, log_tasks
@@ -19,7 +20,7 @@ from core.loggers import log_commands, log_tasks
 load_dotenv()
 
 
-COG_FILES = [file.split(".")[0].title() for file in os.listdir("Cogs/") if file.endswith(".py")]
+COG_FILES = [file.split(".")[0].title() for file in os.listdir("cogs/") if file.endswith(".py")]
 
 
 class Client(commands.Bot):
@@ -30,7 +31,7 @@ class Client(commands.Bot):
     @task("Setup Cogs")
     async def setup_cogs(self):
         for ext in COG_FILES:
-            await self.load_extension("Cogs." + ext.lower())
+            await self.load_extension("cogs." + ext.lower())
             log_tasks.info(f"Loaded cog {ext}.py")
 
     @task("Register Analytics")
@@ -62,6 +63,7 @@ class Client(commands.Bot):
 
     @task("Setup Hook")
     async def setup_hook(self):
+        self.app = BotApp.from_bot(self)
         await self.setup_cogs()
         await self.register_analytics()
 
@@ -83,7 +85,7 @@ async def management_reload_command(interaction: discord.Interaction, cog: str):
     if cog not in COG_FILES:
         await interaction.response.send_message(f"Invalid cog name **{cog}.py**", ephemeral = True)
         return
-    await client.reload_extension(f"Cogs.{cog.lower()}")
+    await client.reload_extension(f"cogs.{cog.lower()}")
     await interaction.response.send_message(f"Successfully reloaded **{cog}.py**", ephemeral = True)
 
 async def cog_autocomplete(_: discord.Interaction, current: str):

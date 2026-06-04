@@ -1,3 +1,5 @@
+import os
+
 from discord.ext import commands, tasks
 from discord import app_commands
 from typing import Literal
@@ -5,56 +7,24 @@ import discord
 import json
 
 from googleapiclient.discovery import build
+
 from core.config import get_data
-api_key = 'REMOVED'
-youtube = build('youtube', 'v3', developerKey=api_key)
-
-
-class ApprovalView(discord.ui.View):
-    def __init__(self, youtuber_name: str) -> None:
-        self.youtuber_name: str = youtuber_name
-        super().__init__(timeout = None)
-        self.data: dict = get_data()
-    
-    @discord.ui.button(emoji = "✅", custom_id = "approvalview_approve", style = discord.ButtonStyle.grey, row = 0)
-    async def approve(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
-        await interaction.response.defer()
-        video_embed: discord.Embed = interaction.message.embeds[1]
-        community_videos: discord.TextChannel = interaction.guild.get_channel(self.data["COMMUNITY_VIDEOS_CHANNEL_ID"])
-        await community_videos.send(
-            content = f"## A new video has been uploaded by {self.youtuber_name}!",
-            embed = video_embed
-        )
-        after_embed: discord.Embed = discord.Embed(
-            description = f"`✅` {interaction.user.mention} has approved a video by {self.youtuber_name}.",
-            color = discord.Color.from_str(self.data["EMBED_COLOR"])
-        )
-        await interaction.message.edit(
-            embeds = [
-                after_embed
-            ],
-            view = None
-        )
-    
-    @discord.ui.button(emoji = "❌", custom_id = "approvalview_deny", style = discord.ButtonStyle.grey, row = 0)
-    async def deny(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
-        await interaction.response.defer()
-        after_embed: discord.Embed = discord.Embed(
-            description = f"`❌` {interaction.user.mention} has denied a video by {self.youtuber_name}.",
-            color = discord.Color.from_str(self.data["EMBED_COLOR"])
-        )
-        await interaction.message.edit(
-            embeds = [
-                after_embed
-            ],
-            view = None
-        )
+from core.loggers import log_tasks
+from ui.views.approval_view import ApprovalView
 
 
 class YTChecker(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
         self.data = get_data()
+        api_key = os.getenv("YOUTUBE_API_KEY") or self.data.get("YOUTUBE_API_KEY")
+        if not api_key:
+            log_tasks.warning(
+                "YOUTUBE_API_KEY is not set; videochecker task will not run API calls"
+            )
+            self.youtube = None
+        else:
+            self.youtube = build("youtube", "v3", developerKey=api_key)
     
     @commands.Cog.listener()
     async def on_ready(self):
@@ -62,18 +32,20 @@ class YTChecker(commands.Cog):
 
     @tasks.loop(minutes=10)
     async def videochecker(self):
-        #try:
-            with open("Assets/yt_info.json", 'r+') as f:
+        if self.youtube is None:
+            return
+        try:
+            with open("assets/yt_info.json", 'r+') as f:
                 data = json.load(f)
                 for video in data.keys():
                     if 'latest_video' not in data[str(video)] or data[str(video)]['latest_video'] == "N/A":
                         continue
                     part_string='contentDetails,statistics,snippet'
-                    response = youtube.channels().list(
+                    response = self.youtube.channels().list(
                         part=part_string,
                         id=data[str(video)]['channel_ID']
                     ).execute()
-                    response2 = youtube.playlistItems().list(
+                    response2 = self.youtube.playlistItems().list(
                         part='contentDetails',
                         playlistId = response['items'][0]['contentDetails']['relatedPlaylists']['uploads'],
                         maxResults = 50
@@ -81,7 +53,7 @@ class YTChecker(commands.Cog):
                     recentVideoID = response2['items'][0]['contentDetails']['videoId']
                     if data[str(video)]['latest_video']==recentVideoID:
                         continue
-                    response3 = youtube.videos().list(
+                    response3 = self.youtube.videos().list(
                         part="snippet,contentDetails,statistics",
                         id=recentVideoID
                     ).execute()
@@ -115,8 +87,8 @@ class YTChecker(commands.Cog):
                 f.seek(0)
                 json.dump(data, f, indent=4)
                 f.truncate()
-        #except Exception as e:
-        #    print(e)
+        except Exception as e:
+            log_tasks.error(f"videochecker failed: {e}")
         
     @app_commands.command(name = "task", description = "Edit the YT Checker Task")
     async def task(self, interaction: discord.Interaction, option: Literal['Restart', 'Start', 'Stop'] = 'Restart'):

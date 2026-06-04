@@ -5,14 +5,14 @@ import json
 from core.database import execute
 from utils.embeds import get_embed_logo_url
 
-with open("Assets/config.json", "r") as file:
+with open("assets/config.json", "r") as file:
     data = json.load(file)
 
 class MediaNote(commands.Cog):
   def __init__(self, client: commands.Bot):
     self.client = client
   
-    with open("Assets/config.json", "r") as file:
+    with open("assets/config.json", "r") as file:
       self.data = json.load(file)
 
   @app_commands.command(name="media-note", description="Adds a note to a Media Rank")

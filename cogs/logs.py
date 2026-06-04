@@ -21,7 +21,7 @@ class Logs(commands.Cog):
     self.flush_admin_logs.start()
     #self.flush_db_logs.start()
     
-    with open("Assets/config.json", "r") as file:
+    with open("assets/config.json", "r") as file:
         self.data = json.load(file)
 
   @tasks.loop(minutes=1)
