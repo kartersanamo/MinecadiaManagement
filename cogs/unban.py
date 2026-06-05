@@ -2,6 +2,7 @@ from discord.ext import commands
 from discord import app_commands
 import discord
 import json
+from core.config import ConfigManager
 
 with open("assets/config.json", "r") as file:
     data = json.load(file)

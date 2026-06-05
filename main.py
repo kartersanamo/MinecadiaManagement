@@ -6,8 +6,6 @@ os.chdir(Path(__file__).resolve().parent)
 import warnings
 warnings.filterwarnings("ignore", category = FutureWarning, module = "google")
 
-
-
 from discord import app_commands
 from discord.ext import commands
 import discord
