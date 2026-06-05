@@ -16,7 +16,7 @@ class MediaRemove(commands.Cog):
       self.data = json.load(file)
 
   @app_commands.command(name="media-remove", description="Removes a user's Media Rank")
-  @app_commands.checks.has_any_role(*data["STAFF_ROLES"])
+  @app_commands.checks.has_any_role(*ConfigManager.get("STAFF_ROLES"))
   @app_commands.describe(user="The user to remove the rank from", reason="The reason for removing this Media Rank")
   async def mediaremove(self, interaction: discord.Interaction, user: discord.Member, reason: str):
     if interaction.guild is None:
@@ -43,10 +43,10 @@ class MediaRemove(commands.Cog):
 
     embed = discord.Embed(title="Media Removed",
                           description=f"**{interaction.user.display_name}** has removed **{user.display_name}**'s Media Rank for the following reason:\n{reason}",
-                          color=discord.Color.from_str(data["EMBED_COLOR"])
+                          color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR"))
     )
-    logo_url = self.client.app.embeds.get_logo_url(data["LOGO"])
-    embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
+    logo_url = self.client.app.embeds.get_logo_url(ConfigManager.get("LOGO"))
+    embed.set_footer(text=ConfigManager.get("FOOTER"), icon_url=logo_url)
 
     await interaction.edit_original_response(embed=embed, content="Removed their roles! **Reminder** to remove their in-game permissions as well!")
 

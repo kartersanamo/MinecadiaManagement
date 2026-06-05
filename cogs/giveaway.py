@@ -1,13 +1,11 @@
 from discord.ext import commands
 import discord
 from discord import app_commands
-from core.config import get_data
+from core.config import ConfigManager
 
 class Giveaway(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
-        self.data = get_data()
-
         self.giveaway_1d_menu = app_commands.ContextMenu(
             name = "Create Giveaway for 1d", 
             callback = self.create_giveaway_1d

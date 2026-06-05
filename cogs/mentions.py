@@ -48,14 +48,14 @@ class Mentions(commands.Cog):
                             embed = discord.Embed(
                                 title="Staff Mentions Timeout",
                                 description=f"`Member` {message.author}#{message.author.discriminator} ({message.author.id})",
-                                color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+                                color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
                                 timestamp=now
                             )
                         except Exception as error:
                             embed = discord.Embed(
                                 title="Staff Mentions Timeout (Error)",
                                 description=f"`Member` {message.author}#{message.author.discriminator} ({message.author.id})\n`Error` {error}",
-                                color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+                                color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
                                 timestamp=now
                             )
 

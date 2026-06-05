@@ -2,7 +2,7 @@ from typing import Optional
 
 import aiomysql
 
-from core.config import ConfigLoader
+from core.config import ConfigManager
 from core.loggers import log_tasks
 
 
@@ -16,7 +16,7 @@ class DatabasePool:
         return cls._instance
 
     async def connect(self):
-        cfg = ConfigLoader().get_db_config()
+        cfg = ConfigManager.get_db_config()
         return await aiomysql.connect(
             host=cfg.get("host", "127.0.0.1"),
             port=cfg.get("port", 3306),
@@ -36,16 +36,9 @@ class DatabasePool:
                 await cursor.execute(query)
                 rows = await cursor.fetchall()
         except Exception as error:
-            try:
-                import sys
-                from pathlib import Path as _Path
-                root = _Path(__file__).resolve().parent.parent.parent
-                if str(root) not in sys.path:
-                    sys.path.insert(0, str(root))
-                from _errors.db import log_query_failure
-                log_query_failure(log_tasks, error, query)
-            except ImportError:
-                log_tasks.error(f"Error executing query: {query} {error}", exc_info=True)
+            from core.errors.db import log_query_failure
+
+            log_query_failure(log_tasks, error, query)
         finally:
             if connection:
                 connection.close()

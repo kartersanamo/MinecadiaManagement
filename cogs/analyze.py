@@ -115,7 +115,7 @@ class Analyze(commands.Cog):
         }
     
     @app_commands.command(name="analyze", description="Run predefined SQL analysis queries on ticket data")
-    # @app_commands.checks.has_any_role(*data["ADMIN_ROLES"])
+    # @app_commands.checks.has_any_role(*ConfigManager.get("ADMIN_ROLES"))
     @app_commands.describe(query="Select which analysis to run")
     async def analyze(
         self, 

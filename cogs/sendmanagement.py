@@ -2,15 +2,13 @@ from discord.ext import commands
 from discord import app_commands
 from typing import Literal
 import discord
-from core.config import get_data
+from core.config import ConfigManager
 from core.loggers import log_commands
 
 
 class SendManagement(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
-        self.data = get_data()
-        
     @app_commands.command(name="send-management", description="Sends a message prompt.")
     @app_commands.describe(option="The message that you'd wish to send")
     @app_commands.guild_only()
@@ -18,7 +16,7 @@ class SendManagement(commands.Cog):
         await interaction.response.send_message(content="Sending your message...", ephemeral=True)
         embeds = {
               "Strikes": [
-                {"embed": discord.Embed(color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+                {"embed": discord.Embed(color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
                                         description=("**Factions Strikes & DQs**\n"
                                                      "\n"
                                                       "Below you can find all of the strikes and DQs for this season of factions!\n")),

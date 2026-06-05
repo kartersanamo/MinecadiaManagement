@@ -17,7 +17,7 @@ class MediaAccept(commands.Cog):
       self.data = json.load(file)
 
   @app_commands.command(name="media-accept", description="Accepts a new member as Media Rank")
-  @app_commands.checks.has_any_role(*data["STAFF_ROLES"])
+  @app_commands.checks.has_any_role(*ConfigManager.get("STAFF_ROLES"))
   @app_commands.describe(user="The user to accept as Media", sendmsg="Whether or not you would like to send the acceptance message")
   async def mediaaccept(self, interaction: discord.Interaction, user: discord.Member, rank:Literal["YouTuber", "Streamer", "TikToker"], sendmsg:Literal["No"]=None):
     if interaction.guild is None:
@@ -49,10 +49,10 @@ class MediaAccept(commands.Cog):
                         f"You must maintain appropriate behavior, remain active unless given notice (may do so by making a ticket explaining your absence if it is a bit long), and maintain views. Any type of disrespect or demands will result in the removal of the rank.\n \n"
                         f"Please review the channel called {channel.mention} for important additional information pertaining to the rules and requirements to maintain the rank. Additionally, we occasionally host giveaways in there as well, so always good to keep an eye on that channel! :slight_smile:\n \n"
                         f"Again, congratulations!",
-          color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+          color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
       )
-      logo_url = self.client.app.embeds.get_logo_url(self.data["LOGO"])
-      embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
+      logo_url = self.client.app.embeds.get_logo_url(ConfigManager.get("LOGO"))
+      embed.set_footer(text=ConfigManager.get("FOOTER"), icon_url=logo_url)
       await interaction.edit_original_response(content="Successfully accepted this user as media!")
       await interaction.channel.send(content=user.mention, embed=embed, file=discord.File("assets/Logo.png"))
 

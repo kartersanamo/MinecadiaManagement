@@ -15,7 +15,7 @@ class MediaNote(commands.Cog):
       self.data = json.load(file)
 
   @app_commands.command(name="media-note", description="Adds a note to a Media Rank")
-  @app_commands.checks.has_any_role(*data["STAFF_ROLES"])
+  @app_commands.checks.has_any_role(*ConfigManager.get("STAFF_ROLES"))
   @app_commands.describe(user="The user to add the note on", note="The note to add onto the user's profile")
   async def medianote(self, interaction: discord.Interaction, user: discord.Member, note:str):
     if interaction.guild is None:
@@ -32,10 +32,10 @@ class MediaNote(commands.Cog):
 
     embed = discord.Embed(title=f"Successfully added the following note to {user}",
                           description=note,
-                          color=data["EMBED_COLOR"]
+                          color=ConfigManager.get("EMBED_COLOR")
     )
-    logo_url = self.client.app.embeds.get_logo_url(data["LOGO"])
-    embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
+    logo_url = self.client.app.embeds.get_logo_url(ConfigManager.get("LOGO"))
+    embed.set_footer(text=ConfigManager.get("FOOTER"), icon_url=logo_url)
 
     await interaction.edit_original_response(content=None, embed=embed)
 

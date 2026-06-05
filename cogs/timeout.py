@@ -4,16 +4,8 @@ from datetime import timedelta
 from typing import Literal
 import discord
 import json
-import sys
-from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parents[2]
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
-try:
-    from _analytics import logger as analytics
-except ImportError:
-    analytics = None
+from core.analytics import logger as analytics
 
 with open("assets/config.json", "r") as file:
     data = json.load(file)

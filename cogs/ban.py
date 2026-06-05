@@ -13,7 +13,7 @@ class Ban(commands.Cog):
     self.client = client
   
   @app_commands.command(name="ban", description="Bans a user from this discord")
-  @app_commands.checks.has_any_role(*data["ADMIN_ROLES"])
+  @app_commands.checks.has_any_role(*ConfigManager.get("ADMIN_ROLES"))
   @app_commands.describe(user="The user to ban from the discord", can_appeal="How long until they can appeal their ban")
   async def ban(self, interaction: discord.Interaction, user: discord.Member, can_appeal: Literal['1 Week', '2 Weeks', '3 Weeks', '4 Weeks', '8 Weeks', '12 Weeks', '24 Weeks', '36 Weeks', '48 Weeks']):
     return await interaction.response.send_message(content = "Please manually ban or use the other `/ban` command!")

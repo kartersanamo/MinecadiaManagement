@@ -16,7 +16,7 @@ class MediaList(commands.Cog):
       self.data = json.load(file)
 
   @app_commands.command(name="media-list", description="Lists all of the users with Media Rank")
-  @app_commands.checks.has_any_role(*data["STAFF_ROLES"])
+  @app_commands.checks.has_any_role(*ConfigManager.get("STAFF_ROLES"))
   @app_commands.describe(past="Specify if you want to see all of the past Media")
   async def medialist(self, interaction: discord.Interaction, past: Literal["Yes"] = None):
     if interaction.guild is None:
@@ -46,10 +46,10 @@ class MediaList(commands.Cog):
 
     embed = discord.Embed(title="List of All Media",
                           description=desc,
-                          color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+                          color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
     )
-    logo_url = self.client.app.embeds.get_logo_url(self.data["LOGO"])
-    embed.set_footer(text=self.data["FOOTER"], icon_url=logo_url)
+    logo_url = self.client.app.embeds.get_logo_url(ConfigManager.get("LOGO"))
+    embed.set_footer(text=ConfigManager.get("FOOTER"), icon_url=logo_url)
 
     await interaction.edit_original_response(content=None, embed=embed)
   

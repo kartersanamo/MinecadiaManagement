@@ -1,26 +1,19 @@
 """Guild analytics: member events, voice time, server snapshots, command usage."""
 from __future__ import annotations
 
-import sys
 import time
-from pathlib import Path
 
 import discord
 from discord.ext import commands, tasks
 
-_ROOT = Path(__file__).resolve().parents[2]
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
-
-from _analytics import logger as analytics  # noqa: E402
-from core.config import get_data
+from core.analytics import logger as analytics
+from core.config import ConfigManager
 
 
 class AnalyticsTracking(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
-        self.data = get_data()
-        self.guild_id = int(self.data.get("GUILD_ID", 0))
+        self.guild_id = int(ConfigManager.get("GUILD_ID", 0))
         self._voice_started: dict[tuple[int, int], float] = {}
         self._ready_initialized = False
 

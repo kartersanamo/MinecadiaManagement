@@ -2,21 +2,13 @@
 from __future__ import annotations
 
 import logging
-import sys
-from pathlib import Path
 
 from discord.ext import commands
 import discord
 
-_log = logging.getLogger("analytics.member_messages")
+from core.analytics import logger as analytics
 
-_ROOT = Path(__file__).resolve().parents[2]
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
-try:
-    from _analytics import logger as analytics
-except ImportError:
-    analytics = None
+_log = logging.getLogger("analytics.member_messages")
 
 
 class MemberMessages(commands.Cog):

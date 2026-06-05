@@ -59,7 +59,7 @@ class Logs(commands.Cog):
   #  if not self.db_logs:
   #    return
   #  
-  #  connection = mysql.connector.connect(**{**self.data["DATABASE_CONFIG"], 'autocommit': bool(self.data["DATABASE_CONFIG"]['autocommit'])})
+  #  connection = mysql.connector.connect(**{**ConfigManager.get("DATABASE_CONFIG"), 'autocommit': bool(ConfigManager.get("DATABASE_CONFIG")['autocommit'])})
   #  cursor = connection.cursor(dictionary=True)
   #  information = "INSERT INTO logs (time, action, user, value, extra) VALUES (%s, %s, %s, %s, %s)"
   #  
@@ -165,7 +165,7 @@ class Logs(commands.Cog):
     # Prevents any discord invite links to be sent besides in recruitment channels & staff bypass
     if not self.is_staff(message):
         if "discord.gg/" in message.content or "discord.com/invite" in message.content:
-            if message.channel.id not in self.data['RECRUITMENT_CHANNELS']:
+            if message.channel.id not in ConfigManager.get('RECRUITMENT_CHANNELS'):
                 await message.delete()
 
   @commands.Cog.listener()
@@ -178,7 +178,7 @@ class Logs(commands.Cog):
        description=f"`Member` {member.mention} | {member.name}#{member.discriminator}\n"
                     f"`Number` {len(member.guild.members)}{te} Member\n"
                     f"`Created At` {member.created_at.strftime('%a, %#d %B %Y, %I:%M %p ')}", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     embed.set_thumbnail(url=member.avatar)
@@ -214,7 +214,7 @@ class Logs(commands.Cog):
             description=f"`Member` {member.mention} ({member.id})\n"
                         f"`Reason` {banned.reason}\n" 
                         f"`Staff` {staff_member.mention} / {staff_member.name}" if staff_member else "",
-            color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+            color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
             timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
 
@@ -226,7 +226,7 @@ class Logs(commands.Cog):
                       f"`Number` {len(member.guild.members)}{te}\n"
                       f"`Created At` {member.created_at.strftime('%a, %#d %B %Y, %I:%M %p ')}\n"
                       f"`Joined at` {member.joined_at.strftime('%a, %#d %B %Y, %I:%M %p ')}", 
-         color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+         color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
          timestamp=datetime.datetime.now(datetime.timezone.utc)
       )
       log_embed.set_thumbnail(url=member.avatar)
@@ -240,7 +240,7 @@ class Logs(commands.Cog):
         left_discord_embed = discord.Embed(
            title=f"{member.name}#{member.discriminator} Left the Discord", 
            description="The ticket creator has left the discord. I guess he didn't need the support...",
-           color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+           color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
            timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
 
@@ -260,7 +260,7 @@ class Logs(commands.Cog):
     embed = discord.Embed(
        title="Member Unbanned", 
        description=f"`Member` {user.mention} ({user.id})", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     embed.set_thumbnail(url=user.avatar)
@@ -284,7 +284,7 @@ class Logs(commands.Cog):
                     f"`Member` {user.mention} ({user.id})\n"
                     f"`Count` {reaction.count}\n \n"
                     f"[Jump To Message]({reaction.message.jump_url})",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -305,7 +305,7 @@ class Logs(commands.Cog):
                     f"`Member` {user.mention} ({user.id})\n"
                     f"`Count` {reaction.count}\n \n"
                     f"[Jump To Message]({reaction.message.jump_url})",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -324,7 +324,7 @@ class Logs(commands.Cog):
        title=f"Reactions Cleared", 
        description= f"`Reactions` {reactions}\n \n"
                     f"[Jump To Message]({message.jump_url})",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -343,7 +343,7 @@ class Logs(commands.Cog):
        title=f"Reaction Emoji Cleared", 
        description= f"`Reaction` {reaction}\n \n"
                     f"[Jump To Message]({reaction.message.jump_url})",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -369,7 +369,7 @@ class Logs(commands.Cog):
                     f"[Cover Image]({event.cover_image.url})\n"
                     f"`Channel` {event.channel.mention}\n \n"
                     f"[Event URL]({event.url})",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -395,7 +395,7 @@ class Logs(commands.Cog):
                     f"[Cover Image]({event.cover_image.url})\n"
                     f"`Channel` {event.channel.mention}\n \n"
                     f"[Event URL]({event.url})",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -425,7 +425,7 @@ class Logs(commands.Cog):
                             f"`Before` {before_value}\n"
                             f"`After` {after_value}\n \n"
                             f"[Event URL]({before.url})",
-               color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+               color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
                timestamp=datetime.datetime.now(datetime.timezone.utc)
           )
             
@@ -446,7 +446,7 @@ class Logs(commands.Cog):
        title="Member Added to Event", 
        description= f"`Name` {event.name}\n"
                     f"`Member` {user.mention} ({user.id})", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -465,7 +465,7 @@ class Logs(commands.Cog):
        title="Member Removed From Event", 
        description= f"`Name` {event.name}\n"
                     f"`Member` {user.mention} ({user.id})", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -482,7 +482,7 @@ class Logs(commands.Cog):
     embed = discord.Embed(
        title="Webhook Updated", 
        description=f"`Channel` {channel.mention}", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc).timestamp()
     )
     
@@ -525,7 +525,7 @@ class Logs(commands.Cog):
                       f"Keyword Filter {rule.trigger.keyword_filter}\n"
                       f"Mention Limit {rule.trigger.mention_limit}\n"
                       f"Type {rule.trigger.type}",
-          color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+          color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
 
@@ -570,7 +570,7 @@ class Logs(commands.Cog):
                       f"Keyword Filter {rule.trigger.keyword_filter}\n"
                       f"Mention Limit {rule.trigger.mention_limit}\n"
                       f"Type {rule.trigger.type}",
-          color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+          color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
 
@@ -615,7 +615,7 @@ class Logs(commands.Cog):
                       f"Keyword Filter {rule.trigger.keyword_filter}\n"
                       f"Mention Limit {rule.trigger.mention_limit}\n"
                       f"Type {rule.trigger.type}",
-          color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+          color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
 
@@ -635,7 +635,7 @@ class Logs(commands.Cog):
     embed = discord.Embed(
        title="Client Connected!", 
        description="Success! The client has been connected to the discord servers.",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     embed.set_author(name=self.client.user.display_name, icon_url = self.client.user.avatar)
@@ -654,7 +654,7 @@ class Logs(commands.Cog):
     embed = discord.Embed(
        title="Client Shard Connected!", 
        description="Success! The client shard has been connected.",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     embed.set_author(name=self.client.user.display_name, icon_url = self.client.user.avatar)
@@ -673,7 +673,7 @@ class Logs(commands.Cog):
     embed = discord.Embed(
        title="Client Disconnected!", 
        description="*Note: If this was not initiated by a developer, but instead automatically, discord will automatically reconnect usually within a few minutes.*",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     embed.set_author(name=self.client.user.display_name, icon_url = self.client.user.avatar)
@@ -692,7 +692,7 @@ class Logs(commands.Cog):
     embed = discord.Embed(
        title="Client Shard Disonnected!", 
        description="*Note: This does not denote the bot going offline, but is instead just a state of a lost connection. Discord will automatically reconnect usually within a few minutes.*",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     embed.set_author(name=self.client.user.display_name, icon_url = self.client.user.avatar)
@@ -720,7 +720,7 @@ class Logs(commands.Cog):
       embed = discord.Embed(
           title="Message Edited",
           description=f"`Message author` {message_before.author} ({message_before.author.id})\n{channel}",
-          color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+          color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
       )
 
@@ -774,7 +774,7 @@ class Logs(commands.Cog):
               f"`Message` {message.content}\n"
               f"`Deleter` {deleter.mention} ({deleter.name})"
           ),
-          color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+          color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
       )
       embed.set_thumbnail(url=message.author.avatar)
@@ -817,7 +817,7 @@ class Logs(commands.Cog):
                     f"`Created at` {created_at} UTC\n"
                     f"`Temporary` {invite.temporary}\n"
                     f"`Revoked` {invite.revoked}", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -836,7 +836,7 @@ class Logs(commands.Cog):
        title="Invite Deleted", 
        description= f"`Invite` {invite}\n"
                     f"`Channel` {invite.channel.mention}", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -855,7 +855,7 @@ class Logs(commands.Cog):
        title="Channel Deleted", 
        description= f"`Channel` **#{channel.name}**\n"
                     f"`Type` {channel.type}", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -874,7 +874,7 @@ class Logs(commands.Cog):
        title="Channel Created", 
        description= f"`Channel` {channel.mention}\n"
                     f"`Type` {channel.type}", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
 
@@ -897,7 +897,7 @@ class Logs(commands.Cog):
     embed = discord.Embed(
       title = "Thread Created",
       description = desc,
-      color = discord.Color.from_str(self.data["EMBED_COLOR"]),
+      color = discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
       timestamp = datetime.datetime.now(datetime.timezone.utc)
     )
     self.logs.append(embed)
@@ -924,7 +924,7 @@ class Logs(commands.Cog):
                         f"`Type` {before.type}\n"
                         f"`Before` {getattr(before, attr)}\n"
                         f"`After` {getattr(after, attr)}",
-            color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+            color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
             timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
         self.db_logs.append((
@@ -945,7 +945,7 @@ class Logs(commands.Cog):
             description=f"`Member` {before.mention} | {before.name}#{before.discriminator}\n"
                         f"`Before` {before.display_name}\n"
                         f"`After` {after.display_name}",
-            color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+            color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
             timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
         embed.set_thumbnail(url=before.avatar)
@@ -975,7 +975,7 @@ class Logs(commands.Cog):
             title="Roles Changed",
             description=f"`Member` {before.mention} | {before.name}#{before.discriminator}\n"
                         f"`{msg}` {newrole[0]}",
-            color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+            color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
             timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
         embed.set_thumbnail(url=before.avatar)
@@ -1008,7 +1008,7 @@ class Logs(commands.Cog):
         embed = discord.Embed(
             title="Permissions Changed",
             description=f"`Member` {before.mention} | {before.name}#{before.discriminator}",
-            color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+            color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
             timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
         embed.add_field(name="Changes", value=differences_text)
@@ -1094,7 +1094,7 @@ class Logs(commands.Cog):
     embed = discord.Embed(
        title="Emojis Changed", 
        description=f"`{msg}` {newemoji[0]}", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     embed.set_thumbnail(url=f"https://cdn.discordapp.com/emojis/{newemojiid[0]}.webp?size=44&quality=lossless")
@@ -1125,7 +1125,7 @@ class Logs(commands.Cog):
         description=f"`Member` {member.mention} | {member.name}#{member.discriminator}\n"
                     f"`Channel left` {before.channel.mention if before.channel else 'N/A'}\n"
                     f"`Channel joined` {after.channel.mention if after.channel else 'N/A'}",
-        color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+        color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
         timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     embed.set_thumbnail(url=member.avatar)
@@ -1145,7 +1145,7 @@ class Logs(commands.Cog):
        title="Pinned Message Update", 
        description= f"`Channel` {channel.mention}\n"
                     f"`Pin` {last_pin}", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -1161,7 +1161,7 @@ class Logs(commands.Cog):
                     f"`Color` {role.color}\n"
                     f"`Created At` {role.created_at}\n"
                     f"`Permissions` {perms}", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -1183,7 +1183,7 @@ class Logs(commands.Cog):
                     f"`Color` {role.color}\n"
                     f"`Created At` {role.created_at}\n"
                     f"`Permissions` {perms}", 
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -1205,7 +1205,7 @@ class Logs(commands.Cog):
                     f"`Name` {integration.name}\n"
                     f"`Type` {integration.type}\n"
                     f"`User {integration.user.mention} ({integration.user.id})`",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -1227,7 +1227,7 @@ class Logs(commands.Cog):
                     f"`Name` {integration.name}\n"
                     f"`Type` {integration.type}\n"
                     f"`User {integration.user.mention} ({integration.user.id})`",
-       color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+       color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
@@ -1261,7 +1261,7 @@ class Logs(commands.Cog):
                                     f"`Permission` {changed_perm[0]}\n"
                                     f"`Before` {opp}\n"
                                     f"`After` {changed_perm[1]}",
-                        color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+                        color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
                         timestamp=datetime.datetime.now(datetime.timezone.utc)
                     )
                     self.db_logs.append((
@@ -1278,7 +1278,7 @@ class Logs(commands.Cog):
                     description=f"`Role` {before.mention}\n"
                                 f"`Before` {before_value}\n"
                                 f"`After` {after_value}",
-                    color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+                    color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
                     timestamp=datetime.datetime.now(datetime.timezone.utc)
                 )
                 self.db_logs.append((
@@ -1300,7 +1300,7 @@ class Logs(commands.Cog):
       name = f"{interaction.command.name} "
           
       try:
-        for option in interaction.data['options']:
+        for option in interaction.data.get('options'):
           name += f"{option['name']}:{option['value']} "
 
       except KeyError:
@@ -1312,7 +1312,7 @@ class Logs(commands.Cog):
                         f"`Author` {interaction.user.mention} ({interaction.user.id})\n"
                         f"`Channel` {interaction.channel.mention}\n"
                         f"`Success` {not interaction.command_failed}",
-          color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+          color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
       )
       self.db_logs.append((
@@ -1329,7 +1329,7 @@ class Logs(commands.Cog):
             description=f"`User` {interaction.user.mention} ({interaction.user.id})\n"
                         f"`Channel` {interaction.channel.mention}\n \n"
                         f"[Jump to Message]({interaction.message.jump_url})",
-            color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+            color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
             timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
         self.db_logs.append((
@@ -1352,7 +1352,7 @@ class Logs(commands.Cog):
       embed = discord.Embed(
           title="Modal Submitted",
           description=description,
-          color=discord.Color.from_str(self.data["EMBED_COLOR"]),
+          color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
       )
       self.db_logs.append((
@@ -1381,7 +1381,7 @@ class Logs(commands.Cog):
     embed = discord.Embed(
       title="Stickers Updated", 
       description=f"`{msg}` {newemoji[0]}", 
-      color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+      color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
       timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     embed.set_thumbnail(url=f"https://media.discordapp.net/stickers/{newemojiid[0]}.webp?size=44&quality=lossless")
@@ -1418,7 +1418,7 @@ class Logs(commands.Cog):
         embed = discord.Embed(
             title=embed_title, 
             description=embed_description, 
-            color=discord.Color.from_str(self.data["EMBED_COLOR"]), 
+            color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")), 
             timestamp=datetime.datetime.now(datetime.timezone.utc),
         )
             

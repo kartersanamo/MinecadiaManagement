@@ -1,20 +1,46 @@
 import json
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-class ConfigLoader:
-    _instance: Optional["ConfigLoader"] = None
+class ConfigManager:
+    """Singleton access to bot configuration."""
+
+    _instance: Optional["ConfigManager"] = None
+    _extra_files: dict[str, dict] = {}
+    _tickets: Optional[dict] = None
 
     @classmethod
-    def get(cls) -> dict:
+    def get_instance(cls) -> "ConfigManager":
         if cls._instance is None:
             cls._instance = cls()
-        return cls._instance.settings
+        return cls._instance
+
+    @classmethod
+    def get(cls, key: str, default: Any = None) -> Any:
+        settings = cls.get_instance().settings
+        if "." not in key:
+            return settings.get(key, default)
+        value: Any = settings
+        for part in key.split("."):
+            if not isinstance(value, dict):
+                return default
+            value = value.get(part)
+            if value is None:
+                return default
+        return value
+
+    @classmethod
+    def all(cls) -> dict:
+        return dict(cls.get_instance().settings)
+
+    @classmethod
+    def get_db_config(cls) -> dict:
+        return cls.get_instance()._resolve_db_config()
 
     def __init__(self):
         with open("assets/config.json", "r") as file:
@@ -26,7 +52,6 @@ class ConfigLoader:
         if os.getenv("YOUTUBE_API_KEY"):
             data["YOUTUBE_API_KEY"] = os.getenv("YOUTUBE_API_KEY")
         self.settings = data
-
     @staticmethod
     def _db_config_from_env() -> dict:
         return {
@@ -38,19 +63,10 @@ class ConfigLoader:
             "autocommit": os.getenv("DB_AUTOCOMMIT", "true").lower() in ("1", "true", "yes"),
         }
 
-    def get_db_config(self) -> dict:
+    def _resolve_db_config(self) -> dict:
         if os.getenv("DB_HOST"):
             return self._db_config_from_env()
         return self.settings.get("DATABASE_CONFIG") or {}
 
 
-def get_settings() -> dict:
-    return ConfigLoader.get()
-
-
-def get_data() -> dict:
-    return get_settings()
-
-
-def get_db_config() -> dict:
-    return ConfigLoader().get_db_config()
+__all__ = ["ConfigManager"]

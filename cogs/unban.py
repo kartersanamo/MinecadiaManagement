@@ -14,7 +14,7 @@ class Unban(commands.Cog):
         self.data = json.load(file)
 
   @app_commands.command(name="unban", description="Unbans a user from the discord")
-  @app_commands.checks.has_any_role(*data["ADMIN_ROLES"])
+  @app_commands.checks.has_any_role(*ConfigManager.get("ADMIN_ROLES"))
   @app_commands.describe(user="The ID of the user to unban from the discord", reason="The reason for unbanning the user from the discord")
   async def unban(self, interaction: discord.Interaction, user: str, reason:str=""):
     if interaction.guild is None:

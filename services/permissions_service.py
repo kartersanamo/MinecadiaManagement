@@ -1,14 +1,12 @@
 # migrated from domain/permissions.py
 import discord
 
-from core.config import get_settings
+from core.config import ConfigManager
 
 
 async def is_staff(user: discord.Member):
-    settings = get_settings()
-    return any(role.name in settings["STAFF_ROLES"] for role in user.roles)
+    return any(role.name in ConfigManager.get("STAFF_ROLES") for role in user.roles)
 
 
 async def is_admin(user: discord.Member):
-    settings = get_settings()
-    return any(role.name in settings["ADMIN_ROLES"] for role in user.roles)
+    return any(role.name in ConfigManager.get("ADMIN_ROLES") for role in user.roles)

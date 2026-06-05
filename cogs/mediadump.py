@@ -17,7 +17,7 @@ class MediaDump(commands.Cog):
       self.data = json.load(file)
 
   @app_commands.command(name="media-dump", description="Dumps the Media Information")
-  @app_commands.checks.has_any_role(*data["STAFF_ROLES"])
+  @app_commands.checks.has_any_role(*ConfigManager.get("STAFF_ROLES"))
   async def mediadump(self, interaction: discord.Interaction):
     if interaction.guild is None:
             return await interaction.response.send_message(content="Commands cannot be ran in DMs!", ephemeral=True)

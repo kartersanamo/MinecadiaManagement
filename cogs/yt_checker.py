@@ -8,7 +8,7 @@ import json
 
 from googleapiclient.discovery import build
 
-from core.config import get_data
+from core.config import ConfigManager
 from core.loggers import log_tasks
 from ui.views.approval_view import ApprovalView
 
@@ -16,8 +16,7 @@ from ui.views.approval_view import ApprovalView
 class YTChecker(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
-        self.data = get_data()
-        api_key = os.getenv("YOUTUBE_API_KEY") or self.data.get("YOUTUBE_API_KEY")
+        api_key = os.getenv("YOUTUBE_API_KEY") or ConfigManager.get("YOUTUBE_API_KEY")
         if not api_key:
             log_tasks.warning(
                 "YOUTUBE_API_KEY is not set; videochecker task will not run API calls"
@@ -61,16 +60,16 @@ class YTChecker(commands.Cog):
                         part="snippet,contentDetails,statistics",
                         id=recentVideoID
                     ).execute()
-                    guild = self.client.get_guild(self.data['GUILD_ID'])
-                    approval_channel: discord.TextChannel = guild.get_channel(self.data['APPROVAL_CHANNEL_ID'])
-                    community_videos_channel: discord.TextChannel = guild.get_channel(self.data['COMMUNITY_VIDEOS_CHANNEL_ID'])
+                    guild = self.client.get_guild(ConfigManager.get('GUILD_ID'))
+                    approval_channel: discord.TextChannel = guild.get_channel(ConfigManager.get('APPROVAL_CHANNEL_ID'))
+                    community_videos_channel: discord.TextChannel = guild.get_channel(ConfigManager.get('COMMUNITY_VIDEOS_CHANNEL_ID'))
                     approval_embed: discord.Embed = discord.Embed(
                         title = "New Video Request",
                         description = f"Would you like to post the following video to {community_videos_channel.mention}?\nPlease select an option below.",
-                        color = discord.Color.from_str(self.data["EMBED_COLOR"])
+                        color = discord.Color.from_str(ConfigManager.get("EMBED_COLOR"))
                     )
                     video_embed = discord.Embed(title = f"New Video By {video}!",
-                                        color = discord.Color.from_str(self.data['EMBED_COLOR']),
+                                        color = discord.Color.from_str(ConfigManager.get('EMBED_COLOR')),
                                         description = f"[{response3['items'][0]['snippet']['title']}](https://youtube.com/watch?v={recentVideoID})")
                     try:
                         video_embed.set_image(url = response3['items'][0]['snippet']['thumbnails']['maxres']['url'])
