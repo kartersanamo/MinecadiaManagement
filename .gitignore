@@ -3,3 +3,4 @@
 *.py[cod]
 .venv/
 logs/
+assets/yt_info.json
