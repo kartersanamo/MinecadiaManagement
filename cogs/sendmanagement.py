@@ -3,7 +3,6 @@ from discord import app_commands
 from typing import Literal
 import discord
 from core.config import ConfigManager
-from core.loggers import log_commands
 
 
 class SendManagement(commands.Cog):

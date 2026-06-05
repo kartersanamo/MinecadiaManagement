@@ -1,7 +1,6 @@
 from discord.ext import commands
 import discord
 from discord import app_commands
-from core.config import ConfigManager
 
 class Giveaway(commands.Cog):
     def __init__(self, client: commands.Bot):
