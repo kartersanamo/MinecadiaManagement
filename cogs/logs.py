@@ -1298,10 +1298,13 @@ class Logs(commands.Cog):
     embed = None
 
     if interaction.type == discord.InteractionType.application_command:
-      name = f"{interaction.command.name} "
+      if interaction.command is not None:
+        name = f"{interaction.command.name} "
+      else:
+        name = f"{(interaction.data or {}).get('name', 'unknown')} "
           
       try:
-        for option in interaction.data.get('options'):
+        for option in (interaction.data or {}).get('options') or []:
           name += f"{option['name']}:{option['value']} "
 
       except KeyError:

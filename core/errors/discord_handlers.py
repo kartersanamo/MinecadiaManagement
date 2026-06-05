@@ -26,6 +26,14 @@ def install_error_handlers(
     async def on_app_command_error(
         interaction: discord.Interaction, error: app_commands.AppCommandError
     ) -> None:
+        if isinstance(error, app_commands.CommandNotFound):
+            await safe_reply(
+                interaction,
+                content="`❌` That command is no longer available.",
+                ephemeral=True,
+            )
+            return
+
         message = user_message_for(error)
         log_exception(
             log_commands,

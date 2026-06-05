@@ -30,6 +30,9 @@ def user_message_for(error: BaseException) -> str:
     if isinstance(error, app_commands.CheckFailure):
         return str(error) or "You cannot use this command right now."
 
+    if isinstance(error, app_commands.CommandNotFound):
+        return "That command is no longer available."
+
     if isinstance(error, app_commands.TransformerError):
         return "Invalid input. Please check your options and try again."
 
