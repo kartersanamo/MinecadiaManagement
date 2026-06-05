@@ -8,18 +8,21 @@ class StatisticsRepository:
 
     async def find_row(self, user_id: int) -> list:
         return await self._db.execute(
-            f"SELECT * FROM `statistics` WHERE `user_ID`='{user_id}'"
+            "SELECT * FROM `staff_statistics` WHERE `user_id` = %s",
+            (user_id,),
         )
 
     async def insert_default_row(self, user_id: int) -> None:
         await self._db.execute(
-            f"INSERT INTO `statistics` (`user_ID`, `tickets_closed`, `messages_sent`, `warnings`, "
-            f"`mutes`, `temp_bans`, `bans`, `screenshares`, `manual_bans`, `blacklists`, `revives`, "
-            f"`appeals`, `threads_locked`, `strike_team_votes`, `characters_sent`, `punishment_requests`) "
-            f"VALUES ('{user_id}', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0')"
+            "INSERT INTO `staff_statistics` (`user_id`, `tickets_closed`, `messages_sent`, `warnings`, "
+            "`mutes`, `temp_bans`, `bans`, `screenshares`, `manual_bans`, `blacklists`, `revives`, "
+            "`appeals`, `threads_locked`, `strike_team_votes`, `characters_sent`, `punishment_requests`) "
+            "VALUES (%s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)",
+            (user_id,),
         )
 
     async def increment_statistic(self, user_id: int, column: str, value: int) -> None:
         await self._db.execute(
-            f"UPDATE `statistics` SET `{column}` = '{value}' WHERE `user_ID` = '{user_id}'"
+            f"UPDATE `staff_statistics` SET `{column}` = %s WHERE `user_id` = %s",
+            (value, user_id),
         )

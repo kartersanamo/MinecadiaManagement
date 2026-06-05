@@ -27,13 +27,16 @@ class DatabasePool:
             cursorclass=aiomysql.DictCursor,
         )
 
-    async def execute(self, query: str) -> list:
+    async def execute(self, query: str, params: tuple | None = None) -> list:
         rows = []
         connection = None
         try:
             connection = await self.connect()
             async with connection.cursor() as cursor:
-                await cursor.execute(query)
+                if params:
+                    await cursor.execute(query, params)
+                else:
+                    await cursor.execute(query)
                 rows = await cursor.fetchall()
         except Exception as error:
             from core.errors.db import log_query_failure
@@ -45,5 +48,5 @@ class DatabasePool:
         return rows
 
 
-async def execute(query: str) -> list:
-    return await DatabasePool.get().execute(query)
+async def execute(query: str, params: tuple | None = None) -> list:
+    return await DatabasePool.get().execute(query, params)

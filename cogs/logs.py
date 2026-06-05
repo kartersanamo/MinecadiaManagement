@@ -17,10 +17,8 @@ class Logs(commands.Cog):
     self.client = client
     self.logs = []
     self.admin_logs = []
-    self.db_logs = []
     self.flush_logs.start()
     self.flush_admin_logs.start()
-    #self.flush_db_logs.start()
     
     with open("assets/config.json", "r") as file:
         self.data = json.load(file)
@@ -55,17 +53,6 @@ class Logs(commands.Cog):
     
     self.admin_logs = [] 
 
-  #@tasks.loop(minutes=1)
-  #async def flush_db_logs(self):
-  #  if not self.db_logs:
-  #    return
-  #  
-  #  connection = mysql.connector.connect(**{**ConfigManager.get("DATABASE_CONFIG"), 'autocommit': bool(ConfigManager.get("DATABASE_CONFIG")['autocommit'])})
-  #  cursor = connection.cursor(dictionary=True)
-  #  information = "INSERT INTO logs (time, action, user, value, extra) VALUES (%s, %s, %s, %s, %s)"
-  #  
-  #  cursor.executemany(information, self.db_logs)
-  #  self.db_logs = []
   #
   def _member_roles(self, author, guild: discord.Guild | None):
     """Resolve role list; message.author is often User, not Member."""
@@ -147,14 +134,6 @@ class Logs(commands.Cog):
 
     except Exception:
       pass
-
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Message Sent", 
-          message.author.id, 
-          message.content, 
-          extra
-    ))
     
     # Prevents anyone under admin from using hyperlinks for safety
     if not self.is_staff(message) and not message.author.bot:
@@ -185,14 +164,6 @@ class Logs(commands.Cog):
     embed.set_thumbnail(url=member.avatar)
 
     self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Member Joined", 
-          member.id, 
-          "", 
-          ""
-    ))
-
   @commands.Cog.listener()
   async def on_member_remove(self, member):
     pos = int(str(len(member.guild.members))[-1])
@@ -232,11 +203,11 @@ class Logs(commands.Cog):
       )
       log_embed.set_thumbnail(url=member.avatar)
 
-    rows = await execute(f"SELECT * FROM `tickets` WHERE `ownerID` = '{str(member.id)}' AND `active`= 'True'")
+    rows = await execute("SELECT * FROM `tickets` WHERE `owner_id` = %s AND `is_active` = 1", (member.id,))
 
     if len(rows)>0:
       for row in rows:
-        channel = discord.utils.get(member.guild.channels, id=int(row['channelID']))
+        channel = discord.utils.get(member.guild.channels, id=int(row['channel_id']))
         staff = discord.utils.get(member.guild.roles, name="Staff Team")
         left_discord_embed = discord.Embed(
            title=f"{member.name}#{member.discriminator} Left the Discord", 
@@ -247,15 +218,7 @@ class Logs(commands.Cog):
 
         await channel.send(embed=left_discord_embed, content=staff.mention)
     
-    self.logs.append(log_embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Member Left", 
-          member.id, 
-          "", 
-          ""
-    ))
-    
+    self.logs.append(log_embed)    
   @commands.Cog.listener()
   async def on_member_unban(self, guild, user):
     embed = discord.Embed(
@@ -266,15 +229,7 @@ class Logs(commands.Cog):
     )
     embed.set_thumbnail(url=user.avatar)
 
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Member Unbanned", 
-          user.id, 
-          "", 
-          ""
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_reaction_add(self, reaction, user):
     if user.bot:
@@ -289,15 +244,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Reaction Added", 
-          user.id, 
-          str(reaction.emoji), 
-          f" RC|{reaction.count} || C|{reaction.message.channel.id} || J|{reaction.message.jump_url}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_reaction_remove(self, reaction, user):
     embed = discord.Embed(
@@ -310,15 +257,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Reaction Removed", 
-          user.id, 
-          str(reaction.emoji), 
-          f" RC|{reaction.count} || C|{reaction.message.channel.id} || J|{reaction.message.jump_url}"
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_reaction_clear(self, message, reactions):
     embed = discord.Embed(
@@ -329,15 +268,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Reactions Cleared", 
-          "", 
-          reactions, 
-          f" C|{reactions.message.channel.id} || J|{reactions.message.jump_url}"
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_reaction_clear_emoji(self, reaction):
     embed = discord.Embed(
@@ -348,15 +279,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Reaction Emoji Cleared", 
-          "", 
-          str(reaction.emoji), 
-          f" C|{reaction.message.channel.id} || J|{reaction.message.jump_url}"
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_scheduled_event_create(self, event):
     embed = discord.Embed(
@@ -374,15 +297,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Event Created", 
-          "", 
-          event.name, 
-          f" D|{event.description} || ST|{event.start_time} || ET|{event.end_time} || CR|{event.creator.id} || L|{event.location} || CI|{event.cover_image.url} || C|{event.channel.id} || U|{event.url}"
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_scheduled_event_delete(self, event):
     embed = discord.Embed(
@@ -400,15 +315,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Event Deleted", 
-          "", 
-          event.name, 
-          f" D|{event.description} || ST|{event.start_time} || ET|{event.end_time} || CR|{event.creator.id} || L|{event.location} || CI|{event.cover_image.url} || C|{event.channel.id} || U|{event.url}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_scheduled_event_update(self, before, after):
     attributes_to_check = ["channel", "cover_image", "description", "end_time", "location", "name", "status", "user_count"]
@@ -429,14 +336,6 @@ class Logs(commands.Cog):
                color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
                timestamp=datetime.datetime.now(datetime.timezone.utc)
           )
-            
-          self.db_logs.append((
-                  datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-                  f"Event {attribute.capitalize()} Updated", 
-                  "", 
-                  f"{before_value} -> {after_value}", 
-                  f" N|{before.name} || D|{before.description} || ST|{before.start_time} || ET|{before.end_time} || CR|{before.creator.id} || L|{before.location} || CI|{before.cover_image.url} || C|{before.channel.id} || U|{before.url}"
-          ))
           self.logs.append(embed)
 
           break
@@ -451,15 +350,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Member Added to Event", 
-          user.id, 
-          event.name, 
-          f" D|{event.description} || ST|{event.start_time} || ET|{event.end_time} || CR|{event.creator.id} || L|{event.location} || CI|{event.cover_image.url} || C|{event.channel.id} || U|{event.url}"
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_scheduled_event_user_remove(self, event, user):
     embed = discord.Embed(
@@ -470,14 +361,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Member Removed From Event", 
-          user.id, event.name, 
-          f" D|{event.description} || ST|{event.start_time} || ET|{event.end_time} || CR|{event.creator.id} || L|{event.location} || CI|{event.cover_image.url} || C|{event.channel.id} || U|{event.url}"
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_webhooks_update(self, channel):
     embed = discord.Embed(
@@ -487,15 +371,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc).timestamp()
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Webhook Updated", 
-          "", 
-          "",
-          f" C|{channel.id}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_automod_rule_create(self, rule):
 
@@ -530,17 +406,7 @@ class Logs(commands.Cog):
           timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
 
-    self.logs.append(embed)
-    self.db_logs.append((
-              datetime.datetime.now(datetime.timezone.utc).timestamp(),
-              "Automod Rule Created",
-              rule.creator.id,
-              rule.name,
-              f" A|{actions} || E|{rule.enabled} || EXC|{exempt_channels} || EXR|{exempt_roles} "
-              f"|| T|Allow {rule.trigger.allow_list} || KF|{rule.trigger.keyword_filter} || "
-              f"ML|{rule.trigger.mention_limit} || T|{rule.trigger.type}"
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_automod_rule_delete(self, rule):
 
@@ -575,17 +441,7 @@ class Logs(commands.Cog):
           timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
 
-    self.logs.append(embed)
-    self.db_logs.append((
-              datetime.datetime.now(datetime.timezone.utc).timestamp(),
-              "Automod Rule Deleted",
-              rule.creator.id,
-              rule.name,
-              f" A|{actions} || E|{rule.enabled} || EXC|{exempt_channels} || EXR|{exempt_roles} "
-              f"|| T|Allow {rule.trigger.allow_list} || KF|{rule.trigger.keyword_filter} || "
-              f"ML|{rule.trigger.mention_limit} || T|{rule.trigger.type}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_automod_rule_update(self, rule):
 
@@ -620,17 +476,7 @@ class Logs(commands.Cog):
           timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
 
-    self.logs.append(embed)
-    self.db_logs.append((
-              datetime.datetime.now(datetime.timezone.utc).timestamp(),
-              "Automod Rule Updated",
-              rule.creator.id,
-              rule.name,
-              f" A|{actions} || E|{rule.enabled} || EXC|{exempt_channels} || EXR|{exempt_roles} "
-              f"|| T|Allow {rule.trigger.allow_list} || KF|{rule.trigger.keyword_filter} || "
-              f"ML|{rule.trigger.mention_limit} || T|{rule.trigger.type}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_connect(self):
     embed = discord.Embed(
@@ -641,15 +487,7 @@ class Logs(commands.Cog):
     )
     embed.set_author(name=self.client.user.display_name, icon_url = self.client.user.avatar)
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Client Connected", 
-          "988616371917180929", 
-          "", 
-          f""
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_shard_connect(self):
     embed = discord.Embed(
@@ -660,15 +498,7 @@ class Logs(commands.Cog):
     )
     embed.set_author(name=self.client.user.display_name, icon_url = self.client.user.avatar)
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(),
-          "Client Shard Connected", 
-          "988616371917180929", 
-          "", 
-          f""
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_disconnect(self):
     embed = discord.Embed(
@@ -679,15 +509,7 @@ class Logs(commands.Cog):
     )
     embed.set_author(name=self.client.user.display_name, icon_url = self.client.user.avatar)
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(),
-          "Client Disconnected!", 
-          "988616371917180929", 
-          "", 
-          f"*Note: If this was not initiated by a developer, but instead automatically, discord will automatically reconnect usually within a few minutes.*"
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_shard_disconnect(self):
     embed = discord.Embed(
@@ -698,15 +520,7 @@ class Logs(commands.Cog):
     )
     embed.set_author(name=self.client.user.display_name, icon_url = self.client.user.avatar)
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Client Shard Disconnected", 
-          "988616371917180929", 
-          "", 
-          f"*Note: This does not denote the bot going offline, but is instead just a state of a lost connection. Discord will automatically reconnect usually within a few minutes.*"
-    ))
-    
+    self.logs.append(embed)    
   @commands.Cog.listener()
   async def on_message_edit(self, message_before, message_after):
 
@@ -737,15 +551,7 @@ class Logs(commands.Cog):
       else:
           self.logs.append(embed)
 
-      # DB log
-      self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(),
-          "Message Edit",
-          message_before.author.id,
-          f"{message_before.content} -> {message_after.content}",
-          f"C|{message_before.channel.id} || J|{message_before.jump_url}"
-      ))
-  
+      # DB log  
   @commands.Cog.listener()
   async def on_message_delete(self, message):
       if message.author.bot:
@@ -793,14 +599,6 @@ class Logs(commands.Cog):
           self.logs.append(embed)
 
       # DB
-      self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(),
-          "Message Deleted",
-          message.author.id,
-          message.content,
-          f"C|{message.channel.id}"
-      ))
-
   @commands.Cog.listener()
   async def on_invite_create(self, invite):
     if invite.created_at is not None:
@@ -822,15 +620,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Invited Created", 
-          invite.inviter.id, 
-          str(invite), 
-          f" C|{invite.channel.id} || MA|{invite.max_age} || MU|{invite.max_uses} || CA|{invite.created_at} UTC || T|{invite.temporary} || R{invite.revoked}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_invite_delete(self, invite):
     embed = discord.Embed(
@@ -841,15 +631,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Invited Deleted", 
-          "", 
-          str(invite), 
-          f" C|{invite.channel.id} || MA|{invite.max_age} || MU|{invite.max_uses} || CA|{invite.created_at} UTC || T|{invite.temporary} || R{invite.revoked}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_guild_channel_delete(self, channel):
     embed = discord.Embed(
@@ -861,14 +643,6 @@ class Logs(commands.Cog):
     )
     
     self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Channel Deleted", 
-          "", 
-          channel.id, 
-          f" T|{channel.type}"
-    ))
-
   @commands.Cog.listener()
   async def on_guild_channel_create(self, channel):
     embed = discord.Embed(
@@ -880,14 +654,6 @@ class Logs(commands.Cog):
     )
 
     self.logs.append(embed)
-    self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-          "Channel Created", 
-          "", 
-          channel.id, 
-          f" T|{channel.type}"
-    ))
-
   @commands.Cog.listener()
   async def on_thread_create(self, thread):
     tag_names = [tag.name for tag in thread.applied_tags]
@@ -928,13 +694,6 @@ class Logs(commands.Cog):
             color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
             timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
-        self.db_logs.append((
-            datetime.datetime.now(datetime.timezone.utc).timestamp(),
-            f"{title} Changed",
-            "",
-            f"{getattr(before, attr)} -> {getattr(after, attr)}",
-            f" T|{after.type} || ID|{after.id}"
-        ))
         self.logs.append(embed)
 
   @commands.Cog.listener()
@@ -952,14 +711,6 @@ class Logs(commands.Cog):
         embed.set_thumbnail(url=before.avatar)
 
         self.logs.append(embed)
-        self.db_logs.append((
-            datetime.datetime.now(datetime.timezone.utc).timestamp(),
-            "Nickname Changed",
-            before.id,
-            f"{before.display_name} -> {after.display_name}",
-            f" TR|{before.top_role.name}"
-        ))
-
     # Check if roles changed
     if before.roles != after.roles:
         msg = "Role Added/Removed"
@@ -982,14 +733,6 @@ class Logs(commands.Cog):
         embed.set_thumbnail(url=before.avatar)
 
         self.logs.append(embed)
-        self.db_logs.append((
-            datetime.datetime.now(datetime.timezone.utc).timestamp(),
-            msg,
-            before.id,
-            newrole[0],
-            f" TR|{before.top_role.name}"
-        ))
-
     # Check if guild permissions changed
     if before.guild_permissions != after.guild_permissions:
 
@@ -1016,14 +759,6 @@ class Logs(commands.Cog):
         embed.set_thumbnail(url=before.avatar)
 
         self.admin_logs.append(embed)
-        self.db_logs.append((
-            datetime.datetime.now(datetime.timezone.utc).timestamp(),
-            "Permissions Changed",
-            before.id,
-            f"{before.guild_permissions} -> {after.guild_permissions}",
-            f" TR|{before.top_role.name}"
-        ))
-
   def _timeout_expires_line(self, member: discord.Member, entry: discord.AuditLogEntry | None) -> str:
     until = member.timed_out_until
     if until is None and entry:
@@ -1100,15 +835,7 @@ class Logs(commands.Cog):
     )
     embed.set_thumbnail(url=f"https://cdn.discordapp.com/emojis/{newemojiid[0]}.webp?size=44&quality=lossless")
       
-    self.logs.append(embed)
-    self.db_logs.append((
-       datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-       msg, 
-       "", 
-       f"{newemoji[0]} ({newemojiid[0]})", 
-       f" URL|https://cdn.discordapp.com/emojis/{newemojiid[0]}.webp?size=44&quality=lossless"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_voice_state_update(self, member, before, after):
     if before.channel == after.channel:
@@ -1132,14 +859,6 @@ class Logs(commands.Cog):
     embed.set_thumbnail(url=member.avatar)
 
     self.logs.append(embed)
-    self.db_logs.append((
-        datetime.datetime.now(datetime.timezone.utc).timestamp(),
-        f"Member {action} Voice",
-        member.id,
-        f"{before.channel.name} ({before.channel.id}) -> {after.channel.name} ({after.channel.id})" if action == "Switched" else f"{after.channel.name} ({after.channel.id})" if after.channel else f"{before.channel.name} ({before.channel.id})",
-        ""
-     ))
-
   @commands.Cog.listener()
   async def on_guild_channel_pins_update(self, channel, last_pin):
     embed = discord.Embed(
@@ -1151,7 +870,6 @@ class Logs(commands.Cog):
     )
     
     self.logs.append(embed)
-    self.db_logs.append((datetime.datetime.now(datetime.timezone.utc).timestamp(), "Pinned Message Updated", "", last_pin, f" C|{channel.id}"))
     
   @commands.Cog.listener()
   async def on_guild_role_create(self, role):
@@ -1166,15 +884,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-       datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-       "Role Created", 
-       "", 
-       role.name, 
-       f" C|{role.color} || CA|{role.created_at} || P|{perms}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_guild_role_delete(self, role):
     perms = list(set(role.permissions))
@@ -1188,15 +898,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-       datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-       "Role Deleted", 
-       "", 
-       role.name, 
-       f" C|{role.color} || CA|{role.created_at} || P|{perms}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_integreation_create(self, integration):
     embed = discord.Embed(
@@ -1210,15 +912,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-       datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-       "Integration Created", 
-       integration.user.id, 
-       integration.name, 
-       f" AN|{integration.account.name} || AID|{integration.account.id}|| E|{integration.enabled} || T|{integration.type}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_integreation_update(self, integration):
     embed = discord.Embed(
@@ -1232,15 +926,7 @@ class Logs(commands.Cog):
        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     
-    self.logs.append(embed)
-    self.db_logs.append((
-       datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-       "Integration Updated", 
-       integration.user.id, 
-       integration.name, 
-       f" AN|{integration.account.name} || AID|{integration.account.id}|| E|{integration.enabled} || T|{integration.type}"
-    ))
-  
+    self.logs.append(embed)  
   @commands.Cog.listener()
   async def on_guild_role_update(self, before, after):
     attributes_to_check = ['color', 'hoist', 'mentionable', 'is_default', 'permissions']
@@ -1265,14 +951,6 @@ class Logs(commands.Cog):
                         color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
                         timestamp=datetime.datetime.now(datetime.timezone.utc)
                     )
-                    self.db_logs.append((
-                        datetime.datetime.now(datetime.timezone.utc).timestamp(),
-                        "Role Permissions Updated",
-                        "",
-                        f"{opp} -> {changed_perm[1]}",
-                        f" P|{changed_perm[0]}"
-                    ))
-
             else:
                 embed = discord.Embed(
                     title=f"Role {attribute.capitalize()} Updated",
@@ -1282,14 +960,6 @@ class Logs(commands.Cog):
                     color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
                     timestamp=datetime.datetime.now(datetime.timezone.utc)
                 )
-                self.db_logs.append((
-                    datetime.datetime.now(datetime.timezone.utc).timestamp(),
-                    f"Role {attribute.capitalize()} Updated",
-                    "",
-                    f"{before_value} -> {after_value}",
-                    f" RN|{before.name} || RI|{before.id}"
-                ))
-
     if embed:
       self.logs.append(embed)
   
@@ -1319,14 +989,6 @@ class Logs(commands.Cog):
           color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
       )
-      self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(),
-          "Slash Command Ran",
-          interaction.user.id,
-          f"/{name}",
-          f" C|{interaction.channel.id} || S|{not interaction.command_failed}"
-      ))
-
     elif interaction.type == discord.InteractionType.component:
         embed = discord.Embed(
             title="Component Interaction",
@@ -1336,14 +998,6 @@ class Logs(commands.Cog):
             color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
             timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
-        self.db_logs.append((
-            datetime.datetime.now(datetime.timezone.utc).timestamp(),
-            "Component Interaction",
-            interaction.user.id,
-            f"",
-            f" C|{interaction.channel.id} || J|{interaction.message.jump_url}"
-        ))
-
     elif interaction.type == discord.InteractionType.modal_submit:
       description = (f"`User` {interaction.user.mention} ({interaction.user.id})\n"
                     f"`Channel` {interaction.channel.mention}\n \n")
@@ -1359,14 +1013,6 @@ class Logs(commands.Cog):
           color=discord.Color.from_str(ConfigManager.get("EMBED_COLOR")),
           timestamp=datetime.datetime.now(datetime.timezone.utc)
       )
-      self.db_logs.append((
-          datetime.datetime.now(datetime.timezone.utc).timestamp(),
-          "Modal Submitted",
-          interaction.user.id,
-          f"",
-          f" C|{interaction.channel.id} || J|{interaction.message.jump_url}"
-      ))
-
     if embed:
         self.logs.append(embed)
 
@@ -1390,15 +1036,7 @@ class Logs(commands.Cog):
     )
     embed.set_thumbnail(url=f"https://media.discordapp.net/stickers/{newemojiid[0]}.webp?size=44&quality=lossless")
       
-    self.logs.append(embed)
-    self.db_logs.append((
-      datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-      msg, 
-      "", 
-      f"{newemoji[0]} ({newemojiid[0]})", 
-      f" URL|https://cdn.discordapp.com/emojis/{newemojiid[0]}.webp?size=44&quality=lossless"
-    ))
-   
+    self.logs.append(embed)   
   @commands.Cog.listener()
   async def on_guild_update(self, before, after):
     attributes_to_check = ["name", "afk_channel", "afk_timeout", "banner", "default_notifications", "description", "discovery_splash", "features", "icon", 
@@ -1428,13 +1066,6 @@ class Logs(commands.Cog):
             
         if thumbnail_url:
           embed.set_thumbnail(url=thumbnail_url)
-
-        self.db_logs.append((
-              datetime.datetime.now(datetime.timezone.utc).timestamp(), 
-              f"Guild {attribute.replace('_', ' ').capitalize()} Changed", 
-              "", 
-              f"{before_value} -> {after_value}", "",
-        ))
         self.logs.append(embed)
             
         break

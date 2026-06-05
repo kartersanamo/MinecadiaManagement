@@ -27,25 +27,25 @@ class Analyze(commands.Cog):
                 ) AS daily_counts;
             """,
             "Top Ticket Count (30d)": """
-                SELECT ownerID, COUNT(*) AS ticket_count
+                SELECT owner_id, COUNT(*) AS ticket_count
                 FROM tickets
                 WHERE FROM_UNIXTIME(CAST(opened_at AS UNSIGNED)) >= NOW() - INTERVAL 30 DAY
-                GROUP BY ownerID
+                GROUP BY owner_id
                 ORDER BY ticket_count DESC
                 LIMIT 20;
             """,
             "Top Ticket Count (All Time)": """
-                SELECT ownerID, COUNT(*) AS ticket_count
+                SELECT owner_id, COUNT(*) AS ticket_count
                 FROM tickets
-                GROUP BY ownerID
+                GROUP BY owner_id
                 ORDER BY ticket_count DESC
                 LIMIT 20;
             """,
             "Most Tickets/Day": """
-                SELECT ownerID, DATE(FROM_UNIXTIME(CAST(opened_at AS UNSIGNED))) AS ticket_date, COUNT(*) AS ticket_count
+                SELECT owner_id, DATE(FROM_UNIXTIME(CAST(opened_at AS UNSIGNED))) AS ticket_date, COUNT(*) AS ticket_count
                 FROM tickets
-                WHERE ownerID != '837793755838939157' AND ownerID != '220576008372355072'
-                GROUP BY ownerID, ticket_date
+                WHERE owner_id != '837793755838939157' AND owner_id != '220576008372355072'
+                GROUP BY owner_id, ticket_date
                 ORDER BY ticket_count DESC
                 LIMIT 10;
             """,
@@ -67,23 +67,23 @@ class Analyze(commands.Cog):
                 LIMIT 5;
             """,
             "Duplicates": """
-                SELECT user_ID, COUNT(*) FROM statistics GROUP BY user_ID HAVING COUNT(*) > 1
+                SELECT user_id, COUNT(*) FROM staff_statistics GROUP BY user_id HAVING COUNT(*) > 1
             """,
             "Longest Gap No Ticket": """
                 WITH Diff AS (
                     SELECT
-                        channelID,
+                        channel_id,
                         opened_at,
-                        LAG(channelID) OVER (ORDER BY opened_at) AS prev_channelID,
+                        LAG(channel_id) OVER (ORDER BY opened_at) AS prev_channel_id,
                         LAG(opened_at) OVER (ORDER BY opened_at) AS prev_opened_at
                     FROM tickets
                     WHERE opened_at <> 0
                 ),
                 MaxGap AS (
                     SELECT
-                        channelID,
+                        channel_id,
                         opened_at,
-                        prev_channelID,
+                        prev_channel_id,
                         prev_opened_at,
                         opened_at - prev_opened_at AS gap
                     FROM Diff
@@ -92,9 +92,9 @@ class Analyze(commands.Cog):
                     LIMIT 1
                 )
                 SELECT
-                    channelID AS current_channelID,
+                    channel_id AS current_channel_id,
                     opened_at AS current_opened_at,
-                    prev_channelID AS previous_channelID,
+                    prev_channel_id AS previous_channel_id,
                     prev_opened_at AS previous_opened_at,
                     gap AS max_gap
                 FROM MaxGap;
@@ -207,7 +207,7 @@ class Analyze(commands.Cog):
         output = []
         
         for idx, row in enumerate(results, 1):
-            user_id = row.get('ownerID', '')
+            user_id = row.get('owner_id', '')
             ticket_count = row.get('ticket_count', 0)
             
             # Format with user mention
@@ -231,8 +231,8 @@ class Analyze(commands.Cog):
         output = []
         
         for idx, row in enumerate(results, 1):
-            channel_id = row.get('channelID', 'N/A')
-            owner_id = row.get('ownerID', 'N/A')
+            channel_id = row.get('channel_id', 'N/A')
+            owner_id = row.get('owner_id', 'N/A')
             duration = row.get('ticket_duration', 0)
             
             # Convert duration to readable format
@@ -251,7 +251,7 @@ class Analyze(commands.Cog):
         output = []
         
         for idx, row in enumerate(results, 1):
-            user_id = row.get('user_ID', 'N/A')
+            user_id = row.get('user_id', 'N/A')
             count = row.get('COUNT(*)', 0)
             output.append(f"**{idx}.** <@{user_id}> - **{count}** duplicates")
         
@@ -260,9 +260,9 @@ class Analyze(commands.Cog):
     def format_longest_gap(self, results: list) -> str:
         """Format longest gap without ticket"""
         row = results[0]
-        current_channel = row.get('current_channelID', 'N/A')
+        current_channel = row.get('current_channel_id', 'N/A')
         current_opened = row.get('current_opened_at', 'N/A')
-        prev_channel = row.get('previous_channelID', 'N/A')
+        prev_channel = row.get('previous_channel_id', 'N/A')
         prev_opened = row.get('previous_opened_at', 'N/A')
         max_gap = row.get('max_gap', 0)
         
