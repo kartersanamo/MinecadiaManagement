@@ -134,8 +134,48 @@ def increment_total_stat(user_id: str, field: str, delta: int = 1) -> None:
     )
 
 
-def record_member_message(user_id: str, char_count: int = 0) -> None:
+def _ensure_member_messages_seen_table() -> None:
+    _execute(
+        """CREATE TABLE IF NOT EXISTS analytics_member_messages_seen (
+           message_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+           recorded_at BIGINT UNSIGNED NOT NULL DEFAULT 0,
+           KEY idx_member_messages_seen_at (recorded_at)
+         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""
+    )
+
+
+def _claim_message_id(message_id: str) -> bool:
+    """Return True if this Discord message id was not counted before."""
+    _ensure_member_messages_seen_table()
+    conn = _connect()
+    if not conn:
+        return False
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """INSERT IGNORE INTO analytics_member_messages_seen
+               (message_id, recorded_at) VALUES (%s, %s)""",
+            (str(message_id), _now()),
+        )
+        claimed = cur.rowcount == 1
+        cur.close()
+        return claimed
+    except Exception as exc:
+        _log.debug("Analytics claim message id failed: %s", exc)
+        return False
+    finally:
+        try:
+            conn.close()
+        except Exception as close_exc:
+            _log.debug("Analytics connection close failed: %s", close_exc)
+
+
+def record_member_message(
+    user_id: str, char_count: int = 0, message_id: str | None = None
+) -> None:
     """Guild-wide message rollup (all members, per day)."""
+    if message_id and not _claim_message_id(message_id):
+        return
     _execute(
         """INSERT INTO analytics_member_messages_daily
            (day, user_id, message_count, character_count)

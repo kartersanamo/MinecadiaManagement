@@ -25,6 +25,7 @@ class MemberMessages(commands.Cog):
             analytics.record_member_message(
                 str(message.author.id),
                 len(message.content or ""),
+                str(message.id),
             )
         except Exception as exc:
             _log.debug("record_member_message failed: %s", exc)
