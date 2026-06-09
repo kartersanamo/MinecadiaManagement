@@ -51,15 +51,19 @@ class Client(commands.Bot):
 
     @task("Sync Command Tree")
     async def sync_command_tree(self):
+        from core.guild_command_sync import sync_guild_commands
+
         stale_commands = [
             ("Create Giveaway for 1d", discord.AppCommandType.message),
         ]
         for name, cmd_type in stale_commands:
             self.tree.remove_command(name, type=cmd_type)
 
-        commands: list[discord.app_commands.AppCommand] = await self.tree.sync()
-        command_list: str = ', '.join([command.name for command in commands])
-        log_tasks.info(f"Synced {len(commands)} commands {command_list}")
+        await sync_guild_commands(
+            self,
+            config_guild_id=ConfigManager.get("GUILD_ID"),
+            log=log_tasks,
+        )
 
     @task("Setup Hook")
     async def setup_hook(self):
