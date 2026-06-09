@@ -64,14 +64,19 @@ class Client(commands.Bot):
     @task("Setup Hook")
     async def setup_hook(self):
         from core.errors.setup import wire_bot_async_setup
+        from services.log_service import init_log_service
 
         await wire_bot_async_setup(self, bot_name="Management", log_tasks=log_tasks)
         self.app = BotApp.from_bot(self)
+        init_log_service(self)
         await self.setup_cogs()
         await self.register_analytics()
 
     @task("Logging in")
     async def on_ready(self):
+        from assets.http.log_http import start_log_http
+
+        await start_log_http(self)
         await self.update_presence()
         await self.remove_help()
         await self.sync_command_tree()
