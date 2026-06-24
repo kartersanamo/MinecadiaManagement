@@ -13,6 +13,7 @@ Body JSON:
     "channel_id": 789,
     "severity": "info|warn|critical",
     "metadata": {},
+    "fields": {"Target": "...", "Details": "..."},
     "source_bot": "Utilities"
   }
 Response: {"event_id": "uuid"}
@@ -78,6 +79,8 @@ async def start_log_http(bot: "commands.Bot") -> None:
         summary = str(body.get("summary") or "")[:2000] or None
         source = str(body.get("source_bot") or "External")[:32]
         metadata = body.get("metadata") if isinstance(body.get("metadata"), dict) else {}
+        raw_fields = body.get("fields") if isinstance(body.get("fields"), dict) else {}
+        fields = {str(k): str(v) for k, v in raw_fields.items() if v is not None}
 
         payload = LogPayload(
             event_type=event_type,
@@ -92,7 +95,7 @@ async def start_log_http(bot: "commands.Bot") -> None:
             source_bot=source,
             summary=summary,
             metadata=metadata,
-            fields={"Details": summary} if summary else {},
+            fields=fields,
             route_admin=bool(body.get("route_admin")),
             immediate=bool(body.get("immediate")),
         )

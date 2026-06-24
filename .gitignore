@@ -4,3 +4,7 @@
 .venv/
 logs/
 assets/yt_info.json
+
+# Auto-generated diagrams (regenerate: python3 ../scripts/generate_bot_diagrams.py MinecadiaManagement)
+docs/diagrams/*
+!docs/diagrams/.gitkeep

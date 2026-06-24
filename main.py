@@ -42,7 +42,9 @@ class Client(commands.Bot):
     @task("Update Presence")
     async def update_presence(self):
         presence = ConfigManager.get("PRESENCE")
-        await client.change_presence(activity = discord.Game(name = presence))
+        activity = discord.Game(name=presence)
+        self._presence_activity = activity
+        await client.change_presence(activity=activity)
         log_tasks.info(f"Updated the bot's presence to {presence}")
 
     @task("Remove Help")
@@ -63,6 +65,8 @@ class Client(commands.Bot):
             self,
             config_guild_id=ConfigManager.get("GUILD_ID"),
             log=log_tasks,
+            also_sync_global = False,
+            clear_global_after_guild = True
         )
 
     @task("Setup Hook")
@@ -75,6 +79,25 @@ class Client(commands.Bot):
         init_log_service(self)
         await self.setup_cogs()
         await self.register_analytics()
+
+    async def on_connect(self):
+        from core.liveness import mark_connected
+
+        mark_connected()
+        log_tasks.info("Discord gateway connected")
+
+    async def on_disconnect(self):
+        from core.liveness import mark_disconnected
+
+        mark_disconnected()
+        log_tasks.warning("Discord gateway disconnected — awaiting reconnect")
+
+    async def on_resume(self):
+        from core.liveness import mark_connected
+
+        mark_connected()
+        await self.update_presence()
+        log_tasks.info("Bot connection resumed")
 
     @task("Logging in")
     async def on_ready(self):

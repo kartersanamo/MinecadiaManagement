@@ -14,11 +14,8 @@ def ordinal_suffix(n: int) -> str:
 
 def timeout_expires_line(member: discord.Member, entry: discord.AuditLogEntry | None) -> str:
     until = member.timed_out_until
-    if until is None and entry:
-        for change in entry.changes:
-            if change.attribute == "communication_disabled_until" and change.after:
-                until = change.after
-                break
+    if until is None and entry and entry.changes:
+        until = getattr(entry.changes.after, "timed_out_until", None)
     if until is None:
         return "Unknown"
     if until.tzinfo is None:

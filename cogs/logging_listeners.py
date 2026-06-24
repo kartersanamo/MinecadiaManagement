@@ -1146,7 +1146,8 @@ class LoggingListeners(commands.Cog):
             return
         rule_id = execution.rule_id
         content = execution.content or execution.matched_content or "—"
-        user = execution.user
+        user_id = execution.user_id
+        user = await self.client.fetch_user(user_id)
         await self._emit(
             LogPayload(
                 event_type="automod.action",
@@ -1154,7 +1155,7 @@ class LoggingListeners(commands.Cog):
                 title="Moderation",
                 action="Automod Action",
                 guild_id=execution.guild_id,
-                actor_id=user.id if user else None,
+                actor_id=user_id if user_id else None,
                 channel_id=execution.channel_id,
                 fields={
                     "Target": format_user(user),
