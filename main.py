@@ -24,7 +24,13 @@ COG_FILES = [file.split(".")[0].title() for file in os.listdir("cogs/") if file.
 
 class Client(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix = ".", intents = discord.Intents().all())
+        intents = discord.Intents.default()
+        intents.members = True
+        intents.presences = True
+        intents.message_content = True
+        intents.bans = True
+        intents.invites = True
+        super().__init__(command_prefix=".", intents=intents)
         wire_bot(self, bot_name="Management", log_commands=log_commands, log_tasks=log_tasks)
 
     @task("Setup Cogs")
