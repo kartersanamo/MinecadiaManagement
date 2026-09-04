@@ -8,7 +8,7 @@ from discord.ext import commands
 from core.logging.events import LogCategory, LogPayload, LogSeverity
 from core.logging.embed_builder import format_user
 from services.log_service import get_log_service
-from services.permission_service import is_admin, is_staff
+from services.permission_service import is_staff
 
 
 class Mentions(commands.Cog):
@@ -21,7 +21,7 @@ class Mentions(commands.Cog):
         try:
             if not message.guild:
                 return
-            if await is_admin(message.author) and message.author.id != 837793755838939157:
+            if await is_staff(message.author) and message.author.id != 837793755838939157:
                 return
 
             content = message.content
