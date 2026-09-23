@@ -60,5 +60,6 @@
         1186037933136949258,
         1186037987369296003
     ],
-    "_comment": "TOKEN and DATABASE_CONFIG are in .env"
+    "FTOP_LIVE_CHANNEL_ID": 1545508740134998107,
+    "_comments": "TOKEN, DATABASE_CONFIG, FTOP_LIVE_SECRET, and FTOP_HTTP_PORT are in .env"
 }

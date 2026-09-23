@@ -108,8 +108,10 @@ class Client(commands.Bot):
     @task("Logging in")
     async def on_ready(self):
         from assets.http.log_http import start_log_http
+        from assets.http.ftop_http import start_ftop_http
 
         await start_log_http(self)
+        await start_ftop_http(self)
         await self.update_presence()
         await self.remove_help()
         await self.sync_command_tree()
