@@ -141,8 +141,6 @@ class FTopService:
             value=f"-# Last updated: {timestamp_str}",
             inline=False,
         )
-
-        embed.set_footer(text=f"Updated: {timestamp_str}")
         return embed
 
     def _format_category(self, entries: list[LeaderboardEntry]) -> str:
