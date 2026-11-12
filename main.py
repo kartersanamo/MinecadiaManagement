@@ -26,7 +26,6 @@ class Client(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.members = True
-        intents.presences = True
         intents.message_content = True
         intents.bans = True
         intents.invites = True

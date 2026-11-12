@@ -51,8 +51,12 @@ class AnalyticsTracking(commands.Cog):
             return
         now = time.time()
         for channel in guild.voice_channels:
-            for member in channel.members:
-                if member.bot:
+            for user_id, voice_state in channel.voice_states.items():
+                try:
+                    member = await guild.fetch_member(user_id)
+                except discord.NotFound:
+                    continue
+                if member.bot or voice_state.channel is None:
                     continue
                 self._voice_started[(member.id, channel.id)] = now
 
@@ -73,12 +77,10 @@ class AnalyticsTracking(commands.Cog):
         guild = self.client.get_guild(self.guild_id)
         if not guild:
             return
-        online = sum(
-            1
-            for m in guild.members
-            if m.status != discord.Status.offline and not m.bot
-        )
-        member_count = len(guild.members)
+        # Member/presence caches require privileged gateway intents.  The
+        # non-privileged guild count is still available on the guild object.
+        online = 0
+        member_count = guild.member_count or 0
         analytics.record_online_sample(member_count, online)
         analytics.record_server_snapshot(
             member_count,

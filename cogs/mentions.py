@@ -24,17 +24,9 @@ class Mentions(commands.Cog):
             if await is_staff(message.author) and message.author.id != 837793755838939157:
                 return
 
-            content = message.content
-            if "<" not in content or ">" not in content or "@" not in content:
+            if not message.mentions:
                 return
-
-            sub = content[content.index("<") + 2 : content.index(">")]
-            try:
-                mentioned_member = discord.utils.get(message.guild.members, id=int(sub))
-            except Exception:
-                mentioned_member = None
-
-            if not mentioned_member or not await is_staff(mentioned_member):
+            if not any(await is_staff(member) for member in message.mentions):
                 return
 
             now = datetime.utcnow()

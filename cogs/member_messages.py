@@ -24,7 +24,7 @@ class MemberMessages(commands.Cog):
         try:
             analytics.record_member_message(
                 str(message.author.id),
-                len(message.content or ""),
+                0,
                 str(message.id),
             )
         except Exception as exc:

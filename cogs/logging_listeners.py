@@ -30,66 +30,14 @@ class LoggingListeners(commands.Cog):
     def _gid(self, guild: discord.Guild | None) -> int:
         return guild.id if guild else guild_id()
 
-    # ── Message moderation (no log embed) ─────────────────────────────────────
-
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if not message.guild:
-            return
-        if message.channel.id in ignored_channel_ids():
-            return
-
-        if not is_staff_message(message) and not message.author.bot:
-            if "[" in message.content and "]" in message.content and "(" in message.content and ")" in message.content:
-                for word in message.content.split(" "):
-                    if "[" in word and "]" in word and "(" in word and ")" in word:
-                        await message.delete()
-                        if log_flag("LOG_AUTO_MODERATION", True):
-                            await self._emit(
-                                LogPayload(
-                                    event_type="message.auto_moderated",
-                                    category=LogCategory.MODERATION,
-                                    title="Message",
-                                    action="Auto Moderated",
-                                    guild_id=message.guild.id,
-                                    actor_id=message.author.id,
-                                    channel_id=message.channel.id,
-                                    fields={
-                                        "Target": format_user(message.author),
-                                        "Channel": format_channel(message.channel),
-                                        "Details": "Hyperlink removed",
-                                    },
-                                )
-                            )
-                        break
-
-        if not is_staff_message(message):
-            if "discord.gg/" in message.content or "discord.com/invite" in message.content:
-                if message.channel.id not in recruitment_channel_ids():
-                    await message.delete()
-                    if log_flag("LOG_AUTO_MODERATION", True):
-                        await self._emit(
-                            LogPayload(
-                                event_type="message.auto_moderated",
-                                category=LogCategory.MODERATION,
-                                title="Message",
-                                action="Auto Moderated",
-                                guild_id=message.guild.id,
-                                actor_id=message.author.id,
-                                channel_id=message.channel.id,
-                                fields={
-                                    "Target": format_user(message.author),
-                                    "Channel": format_channel(message.channel),
-                                    "Details": "Invite link removed",
-                                },
-                            )
-                        )
+    # Content moderation is provided by Discord AutoMod. Message content is
+    # intentionally not read here, so this cog does not require Message Content.
 
     # ── Members ───────────────────────────────────────────────────────────────
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        count = len(member.guild.members)
+        count = member.guild.member_count or 0
         suffix = ordinal_suffix(count)
         created = member.created_at.strftime("%a, %#d %B %Y, %I:%M %p")
         await self._emit(
@@ -136,7 +84,7 @@ class LoggingListeners(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        count = len(member.guild.members)
+        count = member.guild.member_count or 0
         suffix = ordinal_suffix(count)
 
         try:
@@ -328,30 +276,23 @@ class LoggingListeners(commands.Cog):
             return
         if before.channel.id in _EDIT_SKIP_CHANNELS:
             return
-        if any(s in before.content for s in ("https", "http")):
-            return
-        if len(before.content) > 1000 or len(after.content) > 1000:
-            return
-
-        admin = is_admin_message(before)
         await self._emit(
             LogPayload(
                 event_type="message.edit",
                 category=LogCategory.MESSAGE,
                 title="Message",
-                action="Edited",
+                action="Edited (content unavailable)",
                 guild_id=before.guild.id,
                 actor_id=before.author.id,
                 channel_id=before.channel.id,
                 fields={
                     "Actor": format_user(before.author),
                     "Channel": format_channel(before.channel),
-                    "Before": truncate(before.content),
-                    "After": truncate(after.content),
+                    "Details": "Message Content Intent is disabled; edited text is unavailable.",
                 },
                 jump_url=before.jump_url,
-                route_admin=admin,
-                immediate=admin,
+                route_admin=True,
+                immediate=True,
                 thumbnail_url=str(before.author.display_avatar.url),
             ),
             message_context=before,
@@ -368,15 +309,12 @@ class LoggingListeners(commands.Cog):
         else:
             deleter = message.author
 
-        fake = type("FakeMsg", (), {"author": deleter, "guild": message.guild})()
-        admin = is_admin_message(message) or is_admin_message(fake)
-
         await self._emit(
             LogPayload(
                 event_type="message.delete",
                 category=LogCategory.MESSAGE,
                 title="Message",
-                action="Deleted",
+                action="Deleted (content unavailable)",
                 guild_id=message.guild.id,
                 actor_id=deleter.id,
                 target_id=message.author.id,
@@ -385,10 +323,10 @@ class LoggingListeners(commands.Cog):
                     "Target": format_user(message.author),
                     "Actor": format_user(deleter),
                     "Channel": format_channel(message.channel),
-                    "Details": truncate(message.content),
+                    "Details": "Message Content Intent is disabled; deleted text is unavailable.",
                 },
-                route_admin=admin,
-                immediate=admin,
+                route_admin=True,
+                immediate=True,
                 thumbnail_url=str(message.author.display_avatar.url),
             ),
         )
@@ -613,7 +551,7 @@ class LoggingListeners(commands.Cog):
         if thread.owner:
             details += f"\nCreator: {thread.owner.mention}"
         if thread.starter_message:
-            details += f"\n{truncate(thread.starter_message.content, 500)}"
+            details += "\nThread starter content unavailable without Message Content intent"
         await self._emit(
             LogPayload(
                 event_type="thread.create",
