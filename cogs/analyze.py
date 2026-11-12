@@ -41,6 +41,16 @@ class Analyze(commands.Cog):
                 ORDER BY ticket_count DESC
                 LIMIT 20;
             """,
+            "Top Tickets Closed (All Time)": """
+                SELECT closed_by_id AS owner_id, COUNT(*) AS ticket_count
+                FROM tickets
+                WHERE closed_at IS NOT NULL
+                    AND closed_at != '00000000'
+                    AND closed_by_id IS NOT NULL
+                GROUP BY closed_by_id
+                ORDER BY ticket_count DESC
+                LIMIT 20;
+            """,
             "Most Tickets/Day": """
                 SELECT owner_id, DATE(FROM_UNIXTIME(CAST(opened_at AS UNSIGNED))) AS ticket_date, COUNT(*) AS ticket_count
                 FROM tickets
@@ -124,6 +134,7 @@ class Analyze(commands.Cog):
             "Average Tickets per Day",
             "Top Ticket Count (30d)",
             "Top Ticket Count (All Time)",
+            "Top Tickets Closed (All Time)",
             "Most Tickets/Day",
             "Longest Opened Tickets",
             "Duplicates",
@@ -145,7 +156,12 @@ class Analyze(commands.Cog):
                 return
             
             # Format results based on query type
-            formatted_output = self.format_results(query, results)
+            if query == "Top Tickets Closed (All Time)":
+                formatted_output = await self.format_closed_ticket_ranking(
+                    results, interaction.guild
+                )
+            else:
+                formatted_output = self.format_results(query, results)
             
             # Generate CSV for download
             csv_content = self.generate_csv(results)
@@ -184,6 +200,7 @@ class Analyze(commands.Cog):
         ranking_queries = [
             "Top Ticket Count (30d)",
             "Top Ticket Count (All Time)",
+            "Top Tickets Closed (All Time)",
             "Most Tickets/Day"
         ]
         
@@ -219,6 +236,34 @@ class Analyze(commands.Cog):
             else:
                 output.append(f"**{idx}.** {user_mention} - **{ticket_count}** tickets")
         
+        return "\n".join(output)
+
+    async def format_closed_ticket_ranking(
+        self, results: list, guild: discord.Guild | None
+    ) -> str:
+        """Format all-time closed-ticket rankings with display names and IDs."""
+        output = []
+
+        for idx, row in enumerate(results, 1):
+            user_id = str(row.get("owner_id", ""))
+            ticket_count = row.get("ticket_count", 0)
+            display_name = "Unknown User"
+
+            try:
+                member = guild.get_member(int(user_id)) if guild else None
+                user = member or self.client.get_user(int(user_id))
+                if user is None:
+                    user = await self.client.fetch_user(int(user_id))
+                display_name = user.display_name
+            except (ValueError, discord.HTTPException, discord.NotFound) as error:
+                log_commands.warning(
+                    "Unable to resolve display name for user %s: %s", user_id, error
+                )
+
+            output.append(
+                f"**{idx}.** {display_name} (`{user_id}`) - **{ticket_count}** tickets"
+            )
+
         return "\n".join(output)
     
     def format_average_tickets(self, results: list) -> str:
