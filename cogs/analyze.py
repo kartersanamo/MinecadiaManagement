@@ -320,6 +320,7 @@ class Analyze(commands.Cog):
         view = PollAnalysisView(
             message=message,
             voter_ids=voter_ids_list,
+            reaction_voters=reaction_voters,
             ticket_lines=ticket_lines,
             server_lines=server_lines,
             total_voters=total_voters,
@@ -589,6 +590,7 @@ class PollAnalysisView(discord.ui.LayoutView):
         *,
         message: discord.Message,
         voter_ids: list[int],
+        reaction_voters: dict[str, set[int]],
         ticket_lines: list[str],
         server_lines: list[str],
         total_voters: int,
@@ -596,6 +598,7 @@ class PollAnalysisView(discord.ui.LayoutView):
         super().__init__(timeout=900)
         self.message = message
         self.voter_ids = voter_ids
+        self.reaction_voters = reaction_voters
 
         container = discord.ui.Container(
             discord.ui.TextDisplay(
@@ -623,15 +626,26 @@ class PollAnalysisView(discord.ui.LayoutView):
         self.add_item(row)
 
     async def show_players(self, interaction: discord.Interaction) -> None:
-        mentions = [f"<@{user_id}>" for user_id in self.voter_ids]
-        description = "\n".join(mentions) or "No players reacted to this message."
         embed = discord.Embed(
             title="Poll players",
-            description=description[:4096],
             color=discord.Color.gold(),
         )
-        if len(description) > 4096:
-            embed.set_footer(text=f"Showing the first {len(description[:4096].splitlines())} players.")
+        for reaction_name, voter_ids in self.reaction_voters.items():
+            lines = [f"<@{user_id}> {reaction_name}" for user_id in sorted(voter_ids)]
+            if not lines:
+                lines = ["No players"]
+            for index in range(0, len(lines), 40):
+                embed.add_field(
+                    name=(
+                        reaction_name
+                        if index == 0
+                        else f"{reaction_name} (continued)"
+                    ),
+                    value="\n".join(lines[index:index + 40]),
+                    inline=False,
+                )
+        if not self.reaction_voters:
+            embed.description = "No players reacted to this message."
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(client: commands.Bot):
