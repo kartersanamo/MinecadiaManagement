@@ -253,13 +253,16 @@ class Analyze(commands.Cog):
             )
             return
 
-        voter_ids: set[int] = set()
+        reaction_voters: dict[str, set[int]] = {}
         for reaction in message.reactions:
+            reaction_name = str(reaction.emoji)
+            reaction_voters.setdefault(reaction_name, set())
             async for user in reaction.users():
                 if not user.bot:
-                    voter_ids.add(user.id)
+                    reaction_voters[reaction_name].add(user.id)
 
-        voters = []
+        voter_ids = set().union(*reaction_voters.values()) if reaction_voters else set()
+        members_by_id: dict[int, discord.Member | None] = {}
         for user_id in voter_ids:
             member = interaction.guild.get_member(user_id)
             if member is None:
@@ -272,7 +275,7 @@ class Analyze(commands.Cog):
                         interaction.guild.id,
                         error,
                     )
-            voters.append(member)
+            members_by_id[user_id] = member
 
         voter_ids_list = sorted(voter_ids)
         ticket_counts = await self._poll_ticket_counts(voter_ids_list)
@@ -280,18 +283,39 @@ class Analyze(commands.Cog):
 
         ticket_thresholds = (1, 5, 10, 20, 30, 50, 100)
         server_thresholds = (1, 7, 30, 60, 90, 180, 365)
+        server_days_by_id = {
+            user_id: (
+                (datetime.now(timezone.utc) - member.joined_at).total_seconds() / 86400
+                if member is not None and member.joined_at is not None
+                else 0
+            )
+            for user_id, member in members_by_id.items()
+        }
         ticket_lines = self._poll_metric_lines(
-            "tickets", ticket_thresholds, ticket_counts, total_voters
+            "tickets", ticket_thresholds, list(ticket_counts.values()), total_voters
         )
-        server_days = [
-            (datetime.now(timezone.utc) - member.joined_at).total_seconds() / 86400
-            if member is not None and member.joined_at is not None
-            else 0
-            for member in voters
-        ]
         server_lines = self._poll_metric_lines(
-            "days", server_thresholds, server_days, total_voters
+            "days",
+            server_thresholds,
+            list(server_days_by_id.values()),
+            total_voters,
         )
+        outcome_embeds = [
+            self._poll_outcome_embed(
+                title="Poll outcomes by ticket count",
+                unit="ticket",
+                thresholds=ticket_thresholds,
+                reaction_voters=reaction_voters,
+                values_by_id=ticket_counts,
+            ),
+            self._poll_outcome_embed(
+                title="Poll outcomes by time in server",
+                unit="day",
+                thresholds=server_thresholds,
+                reaction_voters=reaction_voters,
+                values_by_id=server_days_by_id,
+            ),
+        ]
 
         view = PollAnalysisView(
             message=message,
@@ -301,10 +325,11 @@ class Analyze(commands.Cog):
             total_voters=total_voters,
         )
         await interaction.followup.send(view=view)
+        await interaction.followup.send(embeds=outcome_embeds)
 
-    async def _poll_ticket_counts(self, voter_ids: list[int]) -> list[int]:
+    async def _poll_ticket_counts(self, voter_ids: list[int]) -> dict[int, int]:
         if not voter_ids:
-            return []
+            return {}
 
         placeholders = ", ".join(["%s"] * len(voter_ids))
         rows = await execute(
@@ -317,7 +342,57 @@ class Analyze(commands.Cog):
             tuple(voter_ids),
         )
         counts_by_user = {int(row["owner_id"]): int(row["ticket_count"]) for row in rows}
-        return [counts_by_user.get(user_id, 0) for user_id in voter_ids]
+        return {user_id: counts_by_user.get(user_id, 0) for user_id in voter_ids}
+
+    @staticmethod
+    def _poll_outcome_embed(
+        *,
+        title: str,
+        unit: str,
+        thresholds: tuple[int, ...],
+        reaction_voters: dict[str, set[int]],
+        values_by_id: dict[int, int | float],
+    ) -> discord.Embed:
+        singular_unit = unit
+        plural_unit = f"{unit}s"
+        embed = discord.Embed(title=title, color=discord.Color.gold())
+
+        for threshold in thresholds:
+            eligible_by_reaction = {
+                reaction_name: sum(
+                    values_by_id.get(user_id, 0) >= threshold for user_id in voter_ids
+                )
+                for reaction_name, voter_ids in reaction_voters.items()
+            }
+            highest_count = max(eligible_by_reaction.values(), default=0)
+            winners = [
+                reaction_name
+                for reaction_name, count in eligible_by_reaction.items()
+                if count == highest_count and highest_count > 0
+            ]
+            if not winners:
+                winner_text = "Winner: **No eligible voters**"
+            elif len(winners) == 1:
+                winner_text = f"Winner: **{winners[0]}**"
+            else:
+                winner_text = f"Tie: **{'**, **'.join(winners)}**"
+
+            option_lines = []
+            for reaction_name, voter_ids in reaction_voters.items():
+                count = eligible_by_reaction[reaction_name]
+                percentage = count / len(voter_ids) * 100 if voter_ids else 0
+                option_lines.append(
+                    f"{reaction_name} `{count}` ({percentage:.1f}% of option voters)"
+                )
+            threshold_unit = singular_unit if threshold == 1 else plural_unit
+            embed.add_field(
+                name=f"At least {threshold} {threshold_unit}",
+                value=f"{winner_text}\n" + "\n".join(option_lines),
+                inline=False,
+            )
+
+        embed.set_footer(text="Winners are determined by the highest eligible voter count.")
+        return embed
 
     @staticmethod
     def _poll_metric_lines(
@@ -532,8 +607,8 @@ class PollAnalysisView(discord.ui.LayoutView):
             discord.ui.TextDisplay("### Ticket count\n" + "\n".join(ticket_lines)),
             discord.ui.Separator(),
             discord.ui.TextDisplay("### Time in server\n" + "\n".join(server_lines)),
-            accent_color=discord.Color.gold(),
         )
+        container.accent_color = discord.Color.gold()
         self.add_item(container)
 
         row = discord.ui.ActionRow()
