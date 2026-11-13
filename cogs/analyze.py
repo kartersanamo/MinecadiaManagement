@@ -4,6 +4,8 @@ from typing import Literal
 import discord
 import json
 import io
+import re
+from datetime import datetime, timezone
 from core.database import execute
 from core.loggers import log_commands
 
@@ -192,6 +194,145 @@ class Analyze(commands.Cog):
         except Exception as e:
             await interaction.followup.send(f"Error executing query: {str(e)}")
             log_commands.error(f"/analyze error {e}")
+
+    @app_commands.command(
+        name="poll-analyze",
+        description="Analyze the server members who reacted to a message",
+    )
+    @app_commands.describe(message_link="The Discord link to the poll message")
+    async def poll_analyze(self, interaction: discord.Interaction, message_link: str):
+        if interaction.guild is None or interaction.channel is None:
+            await interaction.response.send_message(
+                "This command can only be used in a server channel.", ephemeral=True
+            )
+            return
+
+        await interaction.response.defer()
+
+        link_match = re.fullmatch(
+            r"https?://(?:canary\.|ptb\.)?discord(?:app)?\.com/channels/"
+            r"(?P<guild_id>\d+)/(?P<channel_id>\d+)/(?P<message_id>\d+)/?",
+            message_link.strip(),
+        )
+        if link_match is None:
+            await interaction.followup.send(
+                "Please provide a valid Discord message link.", ephemeral=True
+            )
+            return
+
+        guild_id = int(link_match["guild_id"])
+        channel_id = int(link_match["channel_id"])
+        message_id = int(link_match["message_id"])
+        if guild_id != interaction.guild.id:
+            await interaction.followup.send(
+                "That message belongs to a different server.", ephemeral=True
+            )
+            return
+
+        try:
+            channel = interaction.guild.get_channel(channel_id)
+            if channel is None:
+                channel = await interaction.guild.fetch_channel(channel_id)
+            if not isinstance(channel, discord.abc.Messageable):
+                raise TypeError("linked channel cannot contain messages")
+            message = await channel.fetch_message(message_id)
+        except (discord.NotFound, discord.Forbidden):
+            await interaction.followup.send(
+                "I could not find or access that linked message.", ephemeral=True
+            )
+            return
+        except discord.HTTPException as error:
+            log_commands.error("Unable to fetch poll message %s: %s", message_link, error)
+            await interaction.followup.send(
+                "Discord could not fetch that message right now.", ephemeral=True
+            )
+            return
+        except TypeError:
+            await interaction.followup.send(
+                "That link does not point to a message channel.", ephemeral=True
+            )
+            return
+
+        voter_ids: set[int] = set()
+        for reaction in message.reactions:
+            async for user in reaction.users():
+                if not user.bot:
+                    voter_ids.add(user.id)
+
+        voters = []
+        for user_id in voter_ids:
+            member = interaction.guild.get_member(user_id)
+            if member is None:
+                try:
+                    member = await interaction.guild.fetch_member(user_id)
+                except (discord.NotFound, discord.HTTPException) as error:
+                    log_commands.warning(
+                        "Unable to resolve poll voter %s in guild %s: %s",
+                        user_id,
+                        interaction.guild.id,
+                        error,
+                    )
+            voters.append(member)
+
+        voter_ids_list = sorted(voter_ids)
+        ticket_counts = await self._poll_ticket_counts(voter_ids_list)
+        total_voters = len(voter_ids_list)
+
+        ticket_thresholds = (1, 5, 10, 20, 30, 50, 100)
+        server_thresholds = (1, 7, 30, 60, 90, 180, 365)
+        ticket_lines = self._poll_metric_lines(
+            "tickets", ticket_thresholds, ticket_counts, total_voters
+        )
+        server_days = [
+            (datetime.now(timezone.utc) - member.joined_at).total_seconds() / 86400
+            if member is not None and member.joined_at is not None
+            else 0
+            for member in voters
+        ]
+        server_lines = self._poll_metric_lines(
+            "days", server_thresholds, server_days, total_voters
+        )
+
+        view = PollAnalysisView(
+            message=message,
+            voter_ids=voter_ids_list,
+            ticket_lines=ticket_lines,
+            server_lines=server_lines,
+            total_voters=total_voters,
+        )
+        await interaction.followup.send(view=view)
+
+    async def _poll_ticket_counts(self, voter_ids: list[int]) -> list[int]:
+        if not voter_ids:
+            return []
+
+        placeholders = ", ".join(["%s"] * len(voter_ids))
+        rows = await execute(
+            f"""
+                SELECT owner_id, COUNT(*) AS ticket_count
+                FROM tickets
+                WHERE owner_id IN ({placeholders})
+                GROUP BY owner_id
+            """,
+            tuple(voter_ids),
+        )
+        counts_by_user = {int(row["owner_id"]): int(row["ticket_count"]) for row in rows}
+        return [counts_by_user.get(user_id, 0) for user_id in voter_ids]
+
+    @staticmethod
+    def _poll_metric_lines(
+        unit: str, thresholds: tuple[int, ...], values: list[int | float], total: int
+    ) -> list[str]:
+        lines = []
+        for threshold in thresholds:
+            count = sum(value >= threshold for value in values)
+            percentage = count / total * 100 if total else 0
+            singular_unit = unit[:-1] if unit.endswith("s") else unit
+            display_unit = singular_unit if threshold == 1 else unit
+            lines.append(
+                f"**At least {threshold} {display_unit}** — `{count}` ({percentage:.1f}%)"
+            )
+        return lines
     
     def format_results(self, query_name: str, results: list) -> str:
         """Format results based on query type"""
@@ -365,6 +506,58 @@ class Analyze(commands.Cog):
             csv_lines.append(",".join(values))
         
         return "\n".join(csv_lines)
+
+
+class PollAnalysisView(discord.ui.LayoutView):
+    def __init__(
+        self,
+        *,
+        message: discord.Message,
+        voter_ids: list[int],
+        ticket_lines: list[str],
+        server_lines: list[str],
+        total_voters: int,
+    ):
+        super().__init__(timeout=900)
+        self.message = message
+        self.voter_ids = voter_ids
+
+        container = discord.ui.Container(
+            discord.ui.TextDisplay(
+                f"## Poll analysis\n"
+                f"Message [jump link]({message.jump_url})\n"
+                f"**{total_voters}** player(s) voted by reacting."
+            ),
+            discord.ui.Separator(),
+            discord.ui.TextDisplay("### Ticket count\n" + "\n".join(ticket_lines)),
+            discord.ui.Separator(),
+            discord.ui.TextDisplay("### Time in server\n" + "\n".join(server_lines)),
+            accent_color=discord.Color.gold(),
+        )
+        self.add_item(container)
+
+        row = discord.ui.ActionRow()
+        row.add_item(
+            discord.ui.Button(
+                label="View players",
+                style=discord.ButtonStyle.primary,
+                custom_id=f"poll-analysis:players:{message.id}",
+            )
+        )
+        row.children[0].callback = self.show_players
+        self.add_item(row)
+
+    async def show_players(self, interaction: discord.Interaction) -> None:
+        mentions = [f"<@{user_id}>" for user_id in self.voter_ids]
+        description = "\n".join(mentions) or "No players reacted to this message."
+        embed = discord.Embed(
+            title="Poll players",
+            description=description[:4096],
+            color=discord.Color.gold(),
+        )
+        if len(description) > 4096:
+            embed.set_footer(text=f"Showing the first {len(description[:4096].splitlines())} players.")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(client: commands.Bot):
     await client.add_cog(Analyze(client))
