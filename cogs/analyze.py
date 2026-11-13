@@ -630,16 +630,27 @@ class PollAnalysisView(discord.ui.LayoutView):
             title="Poll players",
             color=discord.Color.gold(),
         )
-        for reaction_name, voter_ids in self.reaction_voters.items():
-            lines = [f"<@{user_id}> {reaction_name}" for user_id in sorted(voter_ids)]
+        option_names = (
+            "One", "Two", "Three", "Four", "Five",
+            "Six", "Seven", "Eight", "Nine", "Ten",
+        )
+        for option_index, (reaction_name, voter_ids) in enumerate(
+            self.reaction_voters.items(), start=1
+        ):
+            option_name = (
+                option_names[option_index - 1]
+                if option_index <= len(option_names)
+                else str(option_index)
+            )
+            lines = [f"{reaction_name} <@{user_id}>" for user_id in sorted(voter_ids)]
             if not lines:
                 lines = ["No players"]
             for index in range(0, len(lines), 40):
                 embed.add_field(
                     name=(
-                        reaction_name
+                        f"Option {option_name}"
                         if index == 0
-                        else f"{reaction_name} (continued)"
+                        else f"Option {option_name} (continued)"
                     ),
                     value="\n".join(lines[index:index + 40]),
                     inline=False,
